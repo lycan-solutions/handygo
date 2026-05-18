@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
@@ -7,13 +9,44 @@ import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../notifications/domain/entities/notification_entity.dart';
 import '../../../notifications/presentation/providers/notification_providers.dart';
 import '../../../../core/presentation/responsive_utils.dart';
+import '../../../categories/presentation/providers/categories_providers.dart';
 import '../widgets/client_bottom_nav_bar.dart';
 import '../widgets/service_card.dart';
 import '../widgets/service_data.dart';
 
-const _kGreen = Color(0xFF1D9E75);
+const _kGreen = Color(0xFFDB6234);
 const _kDark = Color(0xFF1A1A1A);
 const _kGray = Color(0xFF6B7280);
+
+// Fetches current area label (subLocality → locality → "Your Area").
+final _currentAreaProvider = FutureProvider<String>((ref) async {
+  try {
+    LocationPermission perm = await Geolocator.checkPermission();
+    if (perm == LocationPermission.denied) {
+      perm = await Geolocator.requestPermission();
+    }
+    if (perm == LocationPermission.denied ||
+        perm == LocationPermission.deniedForever) {
+      return 'Your Area';
+    }
+    final pos = await Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(
+        accuracy: LocationAccuracy.low,
+        timeLimit: Duration(seconds: 6),
+      ),
+    );
+    final marks = await placemarkFromCoordinates(pos.latitude, pos.longitude);
+    if (marks.isEmpty) return 'Your Area';
+    final m = marks.first;
+    return m.subLocality?.isNotEmpty == true
+        ? m.subLocality!
+        : m.locality?.isNotEmpty == true
+            ? m.locality!
+            : 'Your Area';
+  } catch (_) {
+    return 'Your Area';
+  }
+});
 
 class ClientHomePage extends ConsumerWidget {
   const ClientHomePage({super.key});
@@ -26,28 +59,99 @@ class ClientHomePage extends ConsumerWidget {
     final screenWidth = MediaQuery.sizeOf(context).width;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFFFFEFB),
       body: SafeArea(
         bottom: false,
         child: Column(
           children: [
-            // ── Branding header ──────────────────────────────────────────
+            // ── Header: logo + Handygo | location pill | notification ─────
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
               child: Row(
                 children: [
-                  // App logo
-                  Image.asset(
-                    'assets/images/logo-green.png',
-                    height: 36,
-                    fit: BoxFit.contain,
-                    errorBuilder: (_, _, _) => const Icon(
-                      Icons.home_repair_service_rounded,
+                  // Logo icon
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.asset(
+                      'assets/images/logo-green.png',
+                      height: 30,
+                      width: 30,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) => Container(
+                        width: 30,
+                        height: 30,
+                        decoration: BoxDecoration(
+                          color: _kGreen.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.home_repair_service_rounded,
+                          color: _kGreen,
+                          size: 18,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 7),
+                  Text(
+                    'Handygo',
+                    style: TextStyle(
+                      fontSize: rFont(screenWidth, 19, min: 16, max: 22),
+                      fontWeight: FontWeight.w800,
                       color: _kGreen,
-                      size: 28,
+                      letterSpacing: -0.3,
                     ),
                   ),
                   const Spacer(),
+                  // Dynamic location pill
+                  Consumer(
+                    builder: (_, cRef, _) {
+                      final area =
+                          cRef.watch(_currentAreaProvider).valueOrNull ??
+                          'Your Area';
+                      return Container(
+                        constraints: BoxConstraints(
+                          maxWidth: screenWidth * 0.32,
+                        ),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF8F5),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: const Color(0xFFE2E8F0),
+                            width: 1,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.location_on_rounded,
+                              size: 12,
+                              color: _kGreen,
+                            ),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                area,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: _kDark,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(width: 10),
                   // Notification bell with unread badge
                   GestureDetector(
                     onTap: () => context.push('/notifications'),
@@ -55,8 +159,8 @@ class ClientHomePage extends ConsumerWidget {
                       clipBehavior: Clip.none,
                       children: [
                         Container(
-                          width: 40,
-                          height: 40,
+                          width: 38,
+                          height: 38,
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(12),
@@ -119,76 +223,61 @@ class ClientHomePage extends ConsumerWidget {
             // ── Scrollable content ────────────────────────────────────────
             Expanded(
               child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ── Greeting ─────────────────────────────────────────
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Hi $firstName 👋',
-                          style: TextStyle(
-                            fontSize: rFont(
-                              screenWidth,
-                              22,
-                              min: 18,
-                              max: 26,
-                            ),
-                            fontWeight: FontWeight.w700,
-                            color: _kDark,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          'What do you need fixed today?',
-                          style: TextStyle(
-                            fontSize: rFont(
-                              screenWidth,
-                              13,
-                              min: 11,
-                              max: 15,
-                            ),
-                            color: _kGray,
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 20),
-
-                    // ── Search bar ────────────────────────────────────────
+                    // ── Compact greeting + search pill ────────────────────
                     GestureDetector(
                       onTap: () => context.push('/client/post-job'),
                       child: Container(
                         width: double.infinity,
                         padding: const EdgeInsets.symmetric(
                           horizontal: 16,
-                          vertical: 14,
+                          vertical: 12,
                         ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFF1F5F9),
-                          borderRadius: BorderRadius.circular(14),
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(50),
+                          border: Border.all(
+                            color: const Color(0xFFE2E8F0),
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: 0.04),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
                         child: Row(
                           children: [
                             const Icon(
                               Icons.search_rounded,
-                              color: Color(0xFF94A3B8),
+                              color: _kGreen,
                               size: 20,
                             ),
-                            const SizedBox(width: 10),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Hi $firstName 👋',
+                              style: TextStyle(
+                                fontSize: rFont(screenWidth, 13, min: 11, max: 14),
+                                fontWeight: FontWeight.w600,
+                                color: _kDark,
+                              ),
+                            ),
+                            Container(
+                              margin: const EdgeInsets.symmetric(horizontal: 8),
+                              width: 1,
+                              height: 14,
+                              color: const Color(0xFFE2E8F0),
+                            ),
                             Expanded(
                               child: Text(
-                                'Search services or describe issue...',
+                                'Try "AC not cooling" ...',
                                 style: TextStyle(
-                                  fontSize: rFont(
-                                    screenWidth,
-                                    14,
-                                    min: 12,
-                                    max: 16,
-                                  ),
+                                  fontSize: rFont(screenWidth, 12, min: 11, max: 13),
                                   color: const Color(0xFF94A3B8),
                                 ),
                                 maxLines: 1,
@@ -200,183 +289,72 @@ class ClientHomePage extends ConsumerWidget {
                       ),
                     ),
 
-                    const SizedBox(height: 16),
-
-                    // ── EasyRepair Guarantee banner ───────────────────────
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _kGreen,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 42,
-                            height: 42,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: const Icon(
-                              Icons.verified_user_outlined,
-                              color: Colors.white,
-                              size: 22,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'Handygo Guarantee',
-                                  style: TextStyle(
-                                    fontSize: rFont(
-                                      screenWidth,
-                                      15,
-                                      min: 13,
-                                      max: 17,
-                                    ),
-                                    fontWeight: FontWeight.w700,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  'Verified workers · Fixed prices · Free re-work',
-                                  style: TextStyle(
-                                    fontSize: rFont(
-                                      screenWidth,
-                                      12,
-                                      min: 10,
-                                      max: 13,
-                                    ),
-                                    color: Colors.white.withValues(alpha: 0.85),
-                                  ),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-
                     const SizedBox(height: 24),
 
-                    // ── Our Services ──────────────────────────────────────
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Our Services',
-                          style: TextStyle(
-                            fontSize: rFont(screenWidth, 20, min: 17, max: 23),
-                            fontWeight: FontWeight.w700,
-                            color: _kDark,
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () => context.push('/client/post-job'),
-                          child: Text(
-                            'See all',
-                            style: TextStyle(
-                              fontSize: rFont(
-                                screenWidth,
-                                13,
-                                min: 11,
-                                max: 15,
+                    // ── Categorized service sections (dynamic from backend) ─
+                    Consumer(
+                      builder: (_, cRef, _) {
+                        final async = cRef.watch(allCategoriesProvider);
+                        final categories = async.valueOrNull;
+
+                        // While loading or on error, fall back to static data.
+                        if (categories == null || categories.isEmpty) {
+                          return Column(
+                            children: kServiceCategories.map(
+                              (cat) => _ServiceSection(
+                                heading: cat.heading,
+                                items: cat.items.map((s) => _HomeServiceItem(
+                                  displayTitle: s.title,
+                                  backendName: s.backendName,
+                                  emoji: s.emoji,
+                                  bg: s.bg,
+                                  emojiBg: s.emojiBg,
+                                  imagePath: s.imagePath,
+                                )).toList(),
+                                onServiceTap: (backendName) => context.push(
+                                  '/client/post-job?service=${Uri.encodeComponent(backendName)}',
+                                ),
                               ),
-                              fontWeight: FontWeight.w500,
-                              color: _kGreen,
+                            ).toList(),
+                          );
+                        }
+
+                        // Build sections dynamically from backend categories.
+                        final sections = <String, List<_HomeServiceItem>>{};
+                        for (final c in categories) {
+                          final section = sectionForCategory(c.name);
+                          sections.putIfAbsent(section, () => []).add(
+                            _HomeServiceItem(
+                              displayTitle: c.name,
+                              backendName: c.name,
+                              emoji: emojiForCategory(c.name),
+                              bg: bgColorForCategory(c.name),
+                              emojiBg: emojiBgForCategory(c.name),
+                              imagePath: imagePathForCategory(c.name),
                             ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
+                          );
+                        }
 
-                    LayoutBuilder(
-                      builder: (context, constraints) {
-                        const crossAxisCount = 2;
-                        const crossAxisSpacing = 12.0;
-                        const mainAxisSpacing = 12.0;
-                        const cardBaseW = 170.0;
-
-                        final cardWidth =
-                            (constraints.maxWidth -
-                                ((crossAxisCount - 1) * crossAxisSpacing)) /
-                            crossAxisCount;
-
-                        final imageHeight = cardWidth / 1.6;
-
-                        final titleSize = rFont(
-                          cardWidth,
-                          15,
-                          min: 13,
-                          max: 17,
-                          baseWidth: cardBaseW,
-                        );
-                        final btnSize = rFont(
-                          cardWidth,
-                          11,
-                          min: 10,
-                          max: 12,
-                          baseWidth: cardBaseW,
-                        );
-                        // padding(top:9 + bottom:9) + title + gap(6)
-                        // + "Book Now" pill (3+btnSize+3) + 6px buffer.
-                        final textAreaHeight =
-                            18.0 +
-                            titleSize * 1.6 +
-                            6.0 +
-                            (btnSize + 6) +
-                            6.0;
-
-                        final cardHeight = imageHeight + textAreaHeight;
-                        final childAspectRatio = cardWidth / cardHeight;
-
-                        return GridView.builder(
-                          itemCount: kServices.length,
-                          shrinkWrap: true,
-                          physics: const NeverScrollableScrollPhysics(),
-                          gridDelegate:
-                              SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: crossAxisCount,
-                                crossAxisSpacing: crossAxisSpacing,
-                                mainAxisSpacing: mainAxisSpacing,
-                                childAspectRatio: childAspectRatio,
-                              ),
-                          itemBuilder: (context, index) {
-                            final s = kServices[index];
-                            return ServiceCard(
-                              title: s.title,
-                              emoji: s.emoji,
-                              backgroundColor: s.bg,
-                              emojiBackgroundColor: s.emojiBg,
-                              imagePath: s.imagePath,
-                              onTap: () => context.push(
-                                '/client/post-job?service=${Uri.encodeComponent(s.title)}',
-                              ),
-                            );
-                          },
+                        return Column(
+                          children: kSectionOrder
+                              .where((h) => sections.containsKey(h))
+                              .map((heading) => _ServiceSection(
+                                    heading: heading,
+                                    items: sections[heading]!,
+                                    onServiceTap: (backendName) =>
+                                        context.push(
+                                      '/client/post-job?service=${Uri.encodeComponent(backendName)}',
+                                    ),
+                                  ))
+                              .toList(),
                         );
                       },
                     ),
 
-                    const SizedBox(height: 10),
-
                     // ── Recent Notifications ──────────────────────────────
                     const _RecentNotifications(),
 
-                    const SizedBox(height: 100),
+                    const SizedBox(height: 90),
                   ],
                 ),
               ),
@@ -386,6 +364,96 @@ class ClientHomePage extends ConsumerWidget {
       ),
       extendBody: true,
       bottomNavigationBar: const ClientBottomNavBar(currentIndex: 0),
+    );
+  }
+}
+
+// ── Lightweight item model used on homepage ───────────────────────────────────
+
+class _HomeServiceItem {
+  final String displayTitle;
+  final String backendName;
+  final String emoji;
+  final Color bg;
+  final Color emojiBg;
+  final String? imagePath;
+
+  const _HomeServiceItem({
+    required this.displayTitle,
+    required this.backendName,
+    required this.emoji,
+    required this.bg,
+    required this.emojiBg,
+    this.imagePath,
+  });
+}
+
+// ── One categorized service section ──────────────────────────────────────────
+
+class _ServiceSection extends StatelessWidget {
+  final String heading;
+  final List<_HomeServiceItem> items;
+  final void Function(String backendName) onServiceTap;
+
+  const _ServiceSection({
+    required this.heading,
+    required this.items,
+    required this.onServiceTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.sizeOf(context).width;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            heading,
+            style: TextStyle(
+              fontSize: rFont(screenWidth, 16, min: 14, max: 18),
+              fontWeight: FontWeight.w700,
+              color: _kDark,
+            ),
+          ),
+          const SizedBox(height: 8),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              const spacing = 8.0;
+              final cardW =
+                  ((constraints.maxWidth - spacing) / 2.28).clamp(130.0, 175.0);
+              final imageH = cardW * 0.55;
+              final cardH = imageH + 28;
+
+              return SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                clipBehavior: Clip.none,
+                child: Row(
+                  children: items.map((s) {
+                    return Padding(
+                      padding: const EdgeInsets.only(right: spacing),
+                      child: SizedBox(
+                        width: cardW,
+                        height: cardH,
+                        child: ServiceCard(
+                          title: s.displayTitle,
+                          emoji: s.emoji,
+                          backgroundColor: s.bg,
+                          emojiBackgroundColor: s.emojiBg,
+                          imagePath: s.imagePath,
+                          onTap: () => onServiceTap(s.backendName),
+                        ),
+                      ),
+                    );
+                  }).toList(),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
     );
   }
 }

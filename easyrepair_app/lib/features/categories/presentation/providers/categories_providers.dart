@@ -5,17 +5,59 @@ import '../../../../core/network/api_client.dart';
 import '../../data/datasources/categories_remote_datasource.dart';
 import '../../domain/entities/service_category_entity.dart';
 
-// ── Client-facing whitelist ───────────────────────────────────────────────────
-// Only these 4 are shown on the Book a Service form right now.
-// Remove this list (or make it empty) to show all active categories.
-const _kClientBookingCategories = [
-  'Plumber',
-  'Electrician',
+// ── Remote data source provider ───────────────────────────────────────────────
+
+final categoriesRemoteDataSourceProvider =
+    Provider<CategoriesRemoteDataSource>((ref) {
+  return CategoriesRemoteDataSourceImpl(ref.watch(dioProvider));
+});
+
+// ── All active categories from backend (no whitelist) ─────────────────────────
+// Used by homepage and booking form to always show what backend has.
+
+final allCategoriesProvider =
+    FutureProvider<List<ServiceCategoryEntity>>((ref) async {
+  final dataSource = ref.watch(categoriesRemoteDataSourceProvider);
+  try {
+    final models = await dataSource.getCategories();
+    if (models.isNotEmpty) {
+      return models.map((m) => m.toEntity()).toList();
+    }
+  } catch (_) {}
+  return _buildFallback();
+});
+
+// ── Client booking form categories (all active, no whitelist) ─────────────────
+// Alias of allCategoriesProvider — kept as separate symbol so post_job_page
+// can import it without changing its reference.
+
+final clientBookingCategoriesProvider =
+    FutureProvider<List<ServiceCategoryEntity>>((ref) async {
+  return ref.watch(allCategoriesProvider.future);
+});
+
+// ── Fallback stubs (used when API is unreachable) ─────────────────────────────
+
+const _kFallbackNames = [
   'AC Technician',
+  'Electrician',
+  'Plumber',
   'Handyman',
+  'Cleaning',
+  'Painter',
+  'Carpenter',
+  'Pest Control',
+  'Car Wash',
+  'Gardener',
 ];
 
-// ── Color lookup for service cards ───────────────────────────────────────────
+List<ServiceCategoryEntity> _buildFallback() {
+  return _kFallbackNames
+      .map((name) => ServiceCategoryEntity(id: '', name: name))
+      .toList();
+}
+
+// ── Color lookup helpers (kept for post_job_page compatibility) ───────────────
 
 Color categoryBgColor(String name) {
   return switch (name.toLowerCase()) {
@@ -24,8 +66,11 @@ Color categoryBgColor(String name) {
     'plumber'       => const Color(0xFFE8F5E9),
     'handyman'      => const Color(0xFFF3E5F5),
     'painter'       => const Color(0xFFFCE4EC),
-    'carpenter'     => const Color(0xFFFFF3E0),
-    'cleaner'       => const Color(0xFFE0F7FA),
+    'carpenter'     => const Color(0xFFEFEBE9),
+    'cleaning'      => const Color(0xFFFFF3E0),
+    'pest control'  => const Color(0xFFE8F5E9),
+    'car wash'      => const Color(0xFFE3F2FD),
+    'gardener'      => const Color(0xFFE8F5E9),
     _               => const Color(0xFFF0F0F0),
   };
 }
@@ -36,56 +81,12 @@ Color categoryEmojiBgColor(String name) {
     'electrician'   => const Color(0xFFFFECB3),
     'plumber'       => const Color(0xFFC8E6C9),
     'handyman'      => const Color(0xFFE1BEE7),
-    'painter'       => const Color(0xFFF8BBD9),
-    'carpenter'     => const Color(0xFFFFCC80),
-    'cleaner'       => const Color(0xFFB2EBF2),
+    'painter'       => const Color(0xFFF8BBD0),
+    'carpenter'     => const Color(0xFFD7CCC8),
+    'cleaning'      => const Color(0xFFFFE0B2),
+    'pest control'  => const Color(0xFFC8E6C9),
+    'car wash'      => const Color(0xFFBBDEFB),
+    'gardener'      => const Color(0xFFA5D6A7),
     _               => const Color(0xFFDDDDDD),
   };
-}
-
-// ── Remote data source provider ───────────────────────────────────────────────
-
-final categoriesRemoteDataSourceProvider =
-    Provider<CategoriesRemoteDataSource>((ref) {
-  return CategoriesRemoteDataSourceImpl(ref.watch(dioProvider));
-});
-
-// ── Client booking form categories (filtered to the 4 shown for now) ─────────
-// Single flat FutureProvider — fetches from backend and filters to the
-// whitelisted names in declared order. Falls back to stubs if the API
-// is unreachable. No chained providers to avoid async ref.watch issues.
-
-final clientBookingCategoriesProvider =
-    FutureProvider<List<ServiceCategoryEntity>>((ref) async {
-  final dataSource = ref.watch(categoriesRemoteDataSourceProvider);
-
-  List<ServiceCategoryEntity> all;
-  try {
-    final models = await dataSource.getCategories();
-    all = models.isNotEmpty
-        ? models.map((m) => m.toEntity()).toList()
-        : _buildFallback();
-  } catch (_) {
-    all = _buildFallback();
-  }
-
-  // Build an index by lowercase name for fast lookup.
-  final byName = <String, ServiceCategoryEntity>{
-    for (final c in all) c.name.toLowerCase(): c,
-  };
-
-  // Return whitelisted categories in declared order; fall back to a
-  // stub (id='') for any name not yet found in the backend response.
-  return _kClientBookingCategories.map((name) {
-    return byName[name.toLowerCase()] ??
-        ServiceCategoryEntity(id: '', name: name);
-  }).toList();
-});
-
-// ── Hardcoded fallback (used when API is unreachable) ─────────────────────────
-
-List<ServiceCategoryEntity> _buildFallback() {
-  return _kClientBookingCategories
-      .map((name) => ServiceCategoryEntity(id: '', name: name))
-      .toList();
 }

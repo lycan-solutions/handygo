@@ -27,7 +27,7 @@ import '../widgets/location_picker_sheet.dart';
 import '../widgets/service_card.dart';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
-const _kGreen = Color(0xFF0D7A5F);
+const _kGreen = Color(0xFFDB6234);
 const _kRed = Color(0xFFDC2626);
 const _kDark = Color(0xFF1A1A1A);
 const _kGray = Color(0xFF6B7280);
@@ -931,7 +931,8 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
     };
   }
 
-  // ── A. Service selection ──────────────────────────────────────────────────
+  // ── A. Service selection (kept for edit mode / future use) ───────────────
+  // ignore: unused_element
   Widget _buildServiceSection() {
     final categoriesAsync = ref.watch(clientBookingCategoriesProvider);
 
@@ -2062,10 +2063,6 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
 
   // ── Step validation ──────────────────────────────────────────────────────────
   bool _validateStep1() {
-    if (_selectedService == null) {
-      _showError('Please select a service.');
-      return false;
-    }
     if (!_isUrgent) {
       if (_selectedDate == null) {
         _showError('Please select a date.');
@@ -2141,7 +2138,7 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
     );
   }
 
-  // ── Step 1: Service + job type + schedule ─────────────────────────────────────
+  // ── Step 1: Job type + schedule (service pre-selected from home or kept from state) ──
   Widget _buildStep1() {
     return SingleChildScrollView(
       key: const ValueKey(0),
@@ -2150,8 +2147,6 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildServiceSection(),
-          const SizedBox(height: 16),
           _buildJobTypeToggle(),
           const SizedBox(height: 16),
           _buildSchedulingSection(),

@@ -26,145 +26,101 @@ class ServiceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (imagePath != null) {
+      return GestureDetector(
+        onTap: onTap,
+        child: _ImageTile(
+          imagePath: imagePath!,
+          title: title,
+          backgroundColor: backgroundColor,
+        ),
+      );
+    }
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         decoration: BoxDecoration(
-          color: imagePath != null ? Colors.white : backgroundColor,
-          borderRadius: BorderRadius.circular(20),
-          border: isSelected
-              ? Border.all(color: _kGreen, width: 2)
-              : null,
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: _kGreen.withValues(alpha: 0.18),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ]
-              : [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.07),
-                    blurRadius: 10,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
+          color: backgroundColor,
+          borderRadius: BorderRadius.circular(16),
+          border: isSelected ? Border.all(color: _kGreen, width: 2) : null,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isSelected ? 0.12 : 0.07),
+              blurRadius: isSelected ? 14 : 10,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
-        child: imagePath != null
-            ? _ImageLayout(
-                imagePath: imagePath!,
-                title: title,
-                backgroundColor: backgroundColor,
-                isSelected: isSelected,
-              )
-            : _EmojiLayout(
-                emoji: emoji,
-                title: title,
-                emojiBackgroundColor: emojiBackgroundColor,
-                isSelected: isSelected,
-              ),
+        child: _EmojiLayout(
+          emoji: emoji,
+          title: title,
+          emojiBackgroundColor: emojiBackgroundColor,
+          isSelected: isSelected,
+        ),
       ),
     );
   }
 }
 
-// ── Image-based card layout ───────────────────────────────────────────────────
+// ── Image tile card (no Book Now, name below image) ───────────────────────────
 
-class _ImageLayout extends StatelessWidget {
+class _ImageTile extends StatelessWidget {
   final String imagePath;
   final String title;
   final Color backgroundColor;
-  final bool isSelected;
 
-  const _ImageLayout({
+  const _ImageTile({
     required this.imagePath,
     required this.title,
     required this.backgroundColor,
-    required this.isSelected,
   });
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final w = constraints.maxWidth;
-        final titleSize = rFont(w, 15, min: 13, max: 17, baseWidth: 170);
-        final btnSize = rFont(w, 11, min: 10, max: 12, baseWidth: 170);
+    final w = MediaQuery.sizeOf(context).width;
+    final titleSize = rFont(w, 13, min: 11, max: 15);
 
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Expanded(
-              child: ClipRRect(
-                borderRadius:
-                    const BorderRadius.vertical(top: Radius.circular(18)),
-                child: SizedBox.expand(
-                  child: Image.asset(
-                    imagePath,
-                    fit: BoxFit.cover,
-                    errorBuilder: (ctx, err, stack) => Container(
-                      color: backgroundColor,
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        Icons.image_not_supported_outlined,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(14),
+          child: AspectRatio(
+            aspectRatio: 1 / 0.55,
+            child: Image.asset(
+              imagePath,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => Container(
+                color: backgroundColor,
+                alignment: Alignment.center,
+                child: const Icon(
+                  Icons.home_repair_service_rounded,
+                  color: Colors.grey,
+                  size: 32,
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(10, 9, 10, 9),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: titleSize,
-                      fontWeight: FontWeight.w700,
-                      color: const Color(0xFF1A1A1A),
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 6),
-                  // "Book Now" pill button
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      color: _kGreen,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    child: Text(
-                      isSelected ? 'Selected ✓' : 'Book Now',
-                      style: TextStyle(
-                        fontSize: btnSize,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        );
-      },
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: titleSize,
+            fontWeight: FontWeight.w700,
+            color: const Color(0xFF1A1A1A),
+          ),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
     );
   }
 }
 
-// ── Emoji-based card layout (fallback / used by post_job_page) ────────────────
+// ── Emoji-based card layout (used by post_job_page selector) ──────────────────
 
 class _EmojiLayout extends StatelessWidget {
   final String emoji;

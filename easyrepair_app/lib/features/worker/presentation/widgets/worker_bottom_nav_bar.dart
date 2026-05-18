@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/presentation/responsive_utils.dart';
 
-const _kAccent = Color(0xFF1D9E75);
+const _kAccent = Color(0xFFDB6234);
 
 class WorkerBottomNavBar extends StatelessWidget {
   final int currentIndex;

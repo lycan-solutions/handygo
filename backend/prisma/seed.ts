@@ -19,6 +19,30 @@ const SERVICE_CATEGORIES = [
     name: 'Handyman',
     description: 'General home repairs, assembly & odd jobs',
   },
+  {
+    name: 'Cleaning',
+    description: 'Deep cleaning, housekeeping & sanitisation',
+  },
+  {
+    name: 'Painter',
+    description: 'Interior & exterior painting and finishing',
+  },
+  {
+    name: 'Carpenter',
+    description: 'Furniture, woodwork & carpentry repairs',
+  },
+  {
+    name: 'Pest Control',
+    description: 'Pest extermination & prevention treatments',
+  },
+  {
+    name: 'Car Wash',
+    description: 'Professional car washing & detailing at home',
+  },
+  {
+    name: 'Gardener',
+    description: 'Garden maintenance, lawn care & landscaping',
+  },
 ];
 
 async function main() {

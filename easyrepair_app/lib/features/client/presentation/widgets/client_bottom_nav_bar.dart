@@ -3,7 +3,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../core/presentation/responsive_utils.dart';
 
-const _kAccent = Color(0xFF1D9E75);
+const _kAccent = Color(0xFFDB6234);
 
 class ClientBottomNavBar extends StatelessWidget {
   final int currentIndex;
@@ -17,18 +17,18 @@ class ClientBottomNavBar extends StatelessWidget {
       route: '/client/home',
     ),
     _NavTab(
-      label: 'Bookings',
-      icon: Icons.task_alt_outlined,
+      label: 'Fixes',
+      icon: Icons.assignment_turned_in_outlined,
       route: '/client/jobs',
     ),
     _NavTab(
-      label: 'Chat',
-      icon: Icons.chat_bubble_outline,
+      label: 'Ustaads',
+      icon: Icons.engineering_outlined,
       route: '/client/chat',
     ),
     _NavTab(
       label: 'Profile',
-      icon: Icons.person_outline,
+      icon: Icons.person_outline_rounded,
       route: '/client/profile',
     ),
   ];
@@ -52,7 +52,7 @@ class ClientBottomNavBar extends StatelessWidget {
         child: LayoutBuilder(
           builder: (context, constraints) {
             final tabW = constraints.maxWidth / _tabs.length;
-            final iconSize = rFont(tabW, 24, min: 22, max: 28, baseWidth: 90);
+            final iconSize = rFont(tabW, 26, min: 24, max: 30, baseWidth: 90);
             final labelSize = rFont(tabW, 11, min: 10, max: 13, baseWidth: 90);
             final gap = (3.0 * tabW / 90.0).clamp(2.0, 5.0);
 
@@ -77,7 +77,7 @@ class ClientBottomNavBar extends StatelessWidget {
                             size: iconSize,
                             color: isActive
                                 ? _kAccent
-                                : const Color(0xFF94A3B8),
+                                : const Color(0xFF9CA3AF),
                           ),
                           SizedBox(height: gap),
                           Text(
@@ -89,23 +89,10 @@ class ClientBottomNavBar extends StatelessWidget {
                                   : FontWeight.w400,
                               color: isActive
                                   ? _kAccent
-                                  : const Color(0xFF94A3B8),
+                                  : const Color(0xFF9CA3AF),
                             ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 5),
-                          // Active indicator dot — always same size so all
-                          // tabs have identical height (no layout shift).
-                          Container(
-                            width: 4,
-                            height: 4,
-                            decoration: BoxDecoration(
-                              color: isActive
-                                  ? _kAccent
-                                  : Colors.transparent,
-                              shape: BoxShape.circle,
-                            ),
                           ),
                         ],
                       ),

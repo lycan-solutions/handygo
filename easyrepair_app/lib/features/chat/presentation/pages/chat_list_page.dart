@@ -45,7 +45,7 @@ class ChatListPage extends ConsumerWidget {
               child: conversationsAsync.when(
                 loading: () => const Center(
                   child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation(Color(0xFF1D9E75)),
+                    valueColor: AlwaysStoppedAnimation(Color(0xFFDB6234)),
                   ),
                 ),
                 error: (err, _) => _ErrorView(
@@ -57,7 +57,7 @@ class ChatListPage extends ConsumerWidget {
                 data: (conversations) => conversations.isEmpty
                     ? _EmptyView()
                     : RefreshIndicator(
-                        color: const Color(0xFF1D9E75),
+                        color: const Color(0xFFDB6234),
                         onRefresh: () => ref
                             .read(chatConversationsProvider.notifier)
                             .refresh(),
@@ -67,9 +67,15 @@ class ChatListPage extends ConsumerWidget {
                           itemBuilder: (context, index) {
                             return _ConversationTile(
                               conversation: conversations[index],
-                              onTap: () => context.push(
-                                '$detailRoutePrefix/${conversations[index].id}',
-                              ),
+                              onTap: () async {
+                                await context.push(
+                                  '$detailRoutePrefix/${conversations[index].id}',
+                                );
+                                // Refresh unread counts when returning from chat detail.
+                                ref
+                                    .read(chatConversationsProvider.notifier)
+                                    .refresh();
+                              },
                             );
                           },
                         ),
@@ -86,7 +92,7 @@ class ChatListPage extends ConsumerWidget {
 
 class _ConversationTile extends StatelessWidget {
   final ConversationEntity conversation;
-  final VoidCallback onTap;
+  final Future<void> Function() onTap;
 
   const _ConversationTile({
     required this.conversation,
@@ -99,6 +105,8 @@ class _ConversationTile extends StatelessWidget {
     final preview = conversation.lastMessagePreview;
     final timeStr = _formatTime(conversation.lastMessageAt);
 
+    final unread = conversation.unreadCount;
+
     return InkWell(
       onTap: onTap,
       child: Container(
@@ -109,6 +117,7 @@ class _ConversationTile extends StatelessWidget {
           ),
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             _Avatar(participant: participant),
             const SizedBox(width: 14),
@@ -116,39 +125,32 @@ class _ConversationTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          participant.fullName.isNotEmpty
-                              ? participant.fullName
-                              : 'User',
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF1A1A1A),
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      if (timeStr != null)
-                        Text(
-                          timeStr,
-                          style: const TextStyle(
-                            fontSize: 12,
-                            color: Color(0xFF94A3B8),
-                          ),
-                        ),
-                    ],
+                  Text(
+                    participant.fullName.isNotEmpty
+                        ? participant.fullName
+                        : 'User',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: unread > 0
+                          ? FontWeight.w700
+                          : FontWeight.w600,
+                      color: const Color(0xFF1A1A1A),
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                   if (preview != null) ...[
                     const SizedBox(height: 3),
                     Text(
                       preview,
-                      style: const TextStyle(
+                      style: TextStyle(
                         fontSize: 13,
-                        color: Color(0xFF6B7280),
+                        color: unread > 0
+                            ? const Color(0xFF1A1A1A)
+                            : const Color(0xFF6B7280),
+                        fontWeight: unread > 0
+                            ? FontWeight.w500
+                            : FontWeight.normal,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -156,6 +158,45 @@ class _ConversationTile extends StatelessWidget {
                   ],
                 ],
               ),
+            ),
+            const SizedBox(width: 8),
+            // Right side: time on top, unread badge below
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (timeStr != null)
+                  Text(
+                    timeStr,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: unread > 0
+                          ? const Color(0xFFDB6234)
+                          : const Color(0xFF94A3B8),
+                    ),
+                  ),
+                if (unread > 0) ...[
+                  const SizedBox(height: 4),
+                  Container(
+                    constraints: const BoxConstraints(minWidth: 20),
+                    height: 20,
+                    padding: const EdgeInsets.symmetric(horizontal: 6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFDB6234),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    alignment: Alignment.center,
+                    child: Text(
+                      unread > 99 ? '99+' : '$unread',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
         ),
@@ -205,7 +246,7 @@ class _Avatar extends StatelessWidget {
     }
     return CircleAvatar(
       radius: 26,
-      backgroundColor: const Color(0xFF1D9E75),
+      backgroundColor: const Color(0xFFDB6234),
       child: Text(
         participant.initials.isNotEmpty ? participant.initials : '?',
         style: const TextStyle(
@@ -276,7 +317,7 @@ class _ErrorView extends StatelessWidget {
               onPressed: onRetry,
               child: const Text(
                 'Retry',
-                style: TextStyle(color: Color(0xFF1D9E75)),
+                style: TextStyle(color: Color(0xFFDB6234)),
               ),
             ),
           ],

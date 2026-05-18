@@ -14,7 +14,7 @@ class RegisterPage extends ConsumerStatefulWidget {
 }
 
 class _RegisterPageState extends ConsumerState<RegisterPage> {
-  static const _accent = Color(0xFF1D9E75);
+  static const _accent = Color(0xFFDB6234);
   static const _slate = Color(0xFF6B7280);
 
   final _formKey = GlobalKey<FormState>();
@@ -315,7 +315,7 @@ class _RoleOption extends StatelessWidget {
     required this.onTap,
   });
 
-  static const _accent = Color(0xFF1D9E75);
+  static const _accent = Color(0xFFDB6234);
 
   @override
   Widget build(BuildContext context) {
@@ -389,14 +389,14 @@ class _PrimaryButton extends StatelessWidget {
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFF1D9E75),
+          backgroundColor: const Color(0xFFDB6234),
           foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
           disabledBackgroundColor:
-              const Color(0xFF1D9E75).withAlpha(150),
+              const Color(0xFFDB6234).withAlpha(150),
         ),
         child: isLoading
             ? const SizedBox(

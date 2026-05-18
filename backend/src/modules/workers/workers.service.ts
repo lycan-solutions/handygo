@@ -10,6 +10,7 @@ import { AvailabilityStatus, BookingStatus } from '@prisma/client';
 import { Queue } from 'bull';
 import { WorkerJobWithRelations, WorkersRepository } from './workers.repository';
 import { NotificationsService } from '../notifications/notifications.service';
+import { StorageService } from '../storage/storage.service';
 import { UpdateAvailabilityDto } from './dto/update-availability.dto';
 import {
   AUTO_OFFLINE_JOB,
@@ -39,8 +40,31 @@ export class WorkersService {
   constructor(
     private readonly workersRepository: WorkersRepository,
     private readonly notificationsService: NotificationsService,
+    private readonly storageService: StorageService,
     @InjectQueue(WORKERS_QUEUE) private readonly autoOfflineQueue: Queue,
   ) {}
+
+  // ── Avatar upload ────────────────────────────────────────────────────────
+
+  /** Upload a new profile avatar and persist the URL in the worker profile. */
+  async uploadAvatar(
+    userId: string,
+    buffer: Buffer,
+    originalName: string,
+    mimeType: string,
+  ): Promise<{ avatarUrl: string }> {
+    const profile = await this.workersRepository.findByUserId(userId);
+    if (!profile) throw new NotFoundException('Worker profile not found');
+
+    const avatarUrl = await this.storageService.upload(
+      buffer,
+      originalName,
+      mimeType,
+      'avatars',
+    );
+    await this.workersRepository.updateAvatarUrl(profile.id, avatarUrl);
+    return { avatarUrl };
+  }
 
   // ── Profile & availability ───────────────────────────────────────────────
 

@@ -322,19 +322,11 @@ class _ServiceIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return SizedBox(
       width: 46,
       height: 46,
-      decoration: BoxDecoration(
-        color: isCancelled
-            ? const Color(0xFFF9FAFB)
-            : isUrgent
-                ? const Color(0xFFFFF7ED)
-                : const Color(0xFFFFF0EB),
-        borderRadius: BorderRadius.circular(14),
-      ),
       child: Center(
-        child: Text(emoji, style: const TextStyle(fontSize: 22)),
+        child: Text(emoji, style: const TextStyle(fontSize: 28)),
       ),
     );
   }
@@ -365,7 +357,7 @@ class _SlotInfo extends StatelessWidget {
       decoration: BoxDecoration(
         color: isCancelled
             ? const Color(0xFFF9FAFB)
-            : const Color(0xFFF0FDF4),
+            : const Color(0xFFF8F4F1),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(
@@ -382,7 +374,7 @@ class _SlotInfo extends StatelessWidget {
               fontSize: 11.5,
               color: isCancelled
                   ? const Color(0xFF94A3B8)
-                  : const Color(0xFF15803D),
+                  : const Color(0xFF6B7280),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -500,7 +492,7 @@ class _WorkerSection extends StatelessWidget {
                   'Searching for workers...',
                   style: TextStyle(
                     fontSize: 12,
-                    color: Color(0xFF1D9E75),
+                    color: Color(0xFFDB6234),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -542,7 +534,7 @@ class _WorkerAvatar extends StatelessWidget {
       width: 34,
       height: 34,
       decoration: BoxDecoration(
-        color: const Color(0xFF1D9E75),
+        color: const Color(0xFFDB6234),
         shape: BoxShape.circle,
       ),
       child: worker.avatarUrl != null
@@ -621,7 +613,7 @@ class _SearchingDotState extends State<_SearchingDot>
           child: Icon(
             Icons.search_rounded,
             size: 16,
-            color: Color(0xFF1D9E75),
+            color: Color(0xFFDB6234),
           ),
         ),
       ),
@@ -653,7 +645,7 @@ class _PriceTag extends StatelessWidget {
             color: isCancelled
                 ? const Color(0xFFCBD5E1)
                 : isCompleted
-                    ? const Color(0xFF15803D)
+                    ? const Color(0xFF1A1A1A)
                     : const Color(0xFF1A1A1A),
             decoration: isCancelled ? TextDecoration.lineThrough : null,
           ),
@@ -679,7 +671,7 @@ class _FindWorkersBtn extends StatelessWidget {
       child: Container(
         height: 38,
         decoration: BoxDecoration(
-          color: const Color(0xFF1D9E75),
+          color: const Color(0xFFDB6234),
           borderRadius: BorderRadius.circular(12),
         ),
         child: const Row(
@@ -713,7 +705,7 @@ class _TrackWorkerBtn extends StatelessWidget {
       child: Container(
         height: 38,
         decoration: BoxDecoration(
-          color: const Color(0xFF1D9E75),
+          color: const Color(0xFFDB6234),
           borderRadius: BorderRadius.circular(12),
         ),
         child: const Row(
@@ -762,7 +754,7 @@ class _QuickActions extends StatelessWidget {
             child: _ActionBtn(
               label: 'Chat',
               icon: Icons.chat_bubble_outline_rounded,
-              color: const Color(0xFF1D9E75),
+              color: const Color(0xFFDB6234),
               bgColor: const Color(0xFFFFF0EB),
               onTap: onChat!,
             ),

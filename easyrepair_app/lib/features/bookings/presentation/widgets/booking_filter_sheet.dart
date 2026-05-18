@@ -86,7 +86,7 @@ class _BookingFilterSheetState extends State<BookingFilterSheet> {
                     'Reset',
                     style: TextStyle(
                       fontSize: 13,
-                      color: Color(0xFF1D9E75),
+                      color: Color(0xFFDB6234),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -169,7 +169,7 @@ class _BookingFilterSheetState extends State<BookingFilterSheet> {
                   Navigator.pop(context);
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFF1D9E75),
+                  backgroundColor: const Color(0xFFDB6234),
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(14),
@@ -259,11 +259,11 @@ class _Chip extends StatelessWidget {
         duration: const Duration(milliseconds: 150),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
         decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF1D9E75) : const Color(0xFFF9FAFB),
+          color: isSelected ? const Color(0xFFDB6234) : const Color(0xFFF9FAFB),
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
-                ? const Color(0xFF1D9E75)
+                ? const Color(0xFFDB6234)
                 : const Color(0xFFE2E8F0),
           ),
         ),

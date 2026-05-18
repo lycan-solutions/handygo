@@ -2,11 +2,16 @@ import {
   Controller,
   Post,
   Get,
+  Patch,
   Body,
   HttpCode,
   HttpStatus,
   UseGuards,
+  UploadedFile,
+  UseInterceptors,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -61,5 +66,30 @@ export class AuthController {
     @Body('token') token: string,
   ) {
     return this.authService.saveFcmToken(user.id, token);
+  }
+
+  /** GET /auth/avatar — fetch current profile avatar URL */
+  @Get('avatar')
+  @UseGuards(JwtAuthGuard)
+  getAvatarUrl(@CurrentUser() user: { id: string }) {
+    return this.authService.getAvatarUrl(user.id);
+  }
+
+  /** PATCH /auth/avatar — upload a new profile picture (multipart) */
+  @Patch('avatar')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('file'))
+  uploadAvatar(
+    @CurrentUser() user: { id: string },
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) throw new BadRequestException('No file uploaded');
+    return this.authService.uploadAvatar(
+      user.id,
+      file.buffer,
+      file.originalname,
+      file.mimetype,
+    );
   }
 }

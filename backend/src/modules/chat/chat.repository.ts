@@ -179,6 +179,21 @@ export class ChatRepository {
     });
   }
 
+  /**
+   * Count messages in a conversation that were sent by others and not yet seen
+   * by the given user.  Used to populate the unreadCount field in conversation lists.
+   */
+  async countUnread(conversationId: string, currentUserId: string): Promise<number> {
+    return this.prisma.message.count({
+      where: {
+        conversationId,
+        senderUserId: { not: currentUserId },
+        seenAt: null,
+        deletedAt: null,
+      },
+    });
+  }
+
   // ── Seen status ───────────────────────────────────────────────────────────
 
   /**

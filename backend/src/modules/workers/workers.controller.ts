@@ -10,7 +10,10 @@ import {
   HttpCode,
   HttpStatus,
   BadRequestException,
+  UploadedFile,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { BookingStatus } from '@prisma/client';
 import { WorkersService } from './workers.service';
 import { BidsService } from '../bids/bids.service';
@@ -31,6 +34,25 @@ export class WorkersController {
     private readonly workersService: WorkersService,
     private readonly bidsService: BidsService,
   ) {}
+
+  // ── Avatar upload ────────────────────────────────────────────────────────
+
+  /** PATCH /workers/avatar — upload a new profile picture */
+  @Patch('avatar')
+  @HttpCode(HttpStatus.OK)
+  @UseInterceptors(FileInterceptor('file'))
+  uploadAvatar(
+    @CurrentUser() user: { id: string },
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file) throw new BadRequestException('No file uploaded');
+    return this.workersService.uploadAvatar(
+      user.id,
+      file.buffer,
+      file.originalname,
+      file.mimetype,
+    );
+  }
 
   // ── Profile & availability ───────────────────────────────────────────────
 

@@ -52,17 +52,17 @@ class StatusBadge extends StatelessWidget {
       BookingTab.live => const _BadgeConfig(
           bg: Color(0xFFFFF0EB),
           text: Color(0xFFCC4A0D),
-          dot: Color(0xFF1D9E75),
+          dot: Color(0xFFDB6234),
         ),
       BookingTab.assigned => const _BadgeConfig(
-          bg: Color(0xFFF0FDF4),
-          text: Color(0xFF15803D),
-          dot: Color(0xFF16A34A),
+          bg: Color(0xFFF1F5F9),
+          text: Color(0xFF374151),
+          dot: Color(0xFF6B7280),
         ),
       BookingTab.completed => const _BadgeConfig(
-          bg: Color(0xFFF0FDF4),
-          text: Color(0xFF166534),
-          dot: Color(0xFF15803D),
+          bg: Color(0xFFF1F5F9),
+          text: Color(0xFF374151),
+          dot: Color(0xFF6B7280),
         ),
       BookingTab.cancelled => const _BadgeConfig(
           bg: Color(0xFFFFF1F2),

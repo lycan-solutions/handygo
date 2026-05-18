@@ -46,6 +46,7 @@ class ConversationModel {
   final String createdAt;
   final String updatedAt;
   final ConversationParticipantModel otherParticipant;
+  final int unreadCount;
 
   const ConversationModel({
     required this.id,
@@ -57,6 +58,7 @@ class ConversationModel {
     required this.createdAt,
     required this.updatedAt,
     required this.otherParticipant,
+    this.unreadCount = 0,
   });
 
   factory ConversationModel.fromJson(Map<String, dynamic> json) {
@@ -72,6 +74,7 @@ class ConversationModel {
       otherParticipant: ConversationParticipantModel.fromJson(
         json['otherParticipant'] as Map<String, dynamic>,
       ),
+      unreadCount: (json['unreadCount'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -86,6 +89,7 @@ class ConversationModel {
       createdAt: createdAt,
       updatedAt: updatedAt,
       otherParticipant: otherParticipant.toEntity(),
+      unreadCount: unreadCount,
     );
   }
 }

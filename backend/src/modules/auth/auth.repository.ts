@@ -88,6 +88,35 @@ export class AuthRepository {
     });
   }
 
+  async updateClientAvatarUrl(userId: string, avatarUrl: string): Promise<void> {
+    await this.prisma.clientProfile.update({
+      where: { userId },
+      data: { avatarUrl },
+    });
+  }
+
+  async updateWorkerAvatarUrl(userId: string, avatarUrl: string): Promise<void> {
+    await this.prisma.workerProfile.update({
+      where: { userId },
+      data: { avatarUrl },
+    });
+  }
+
+  async getAvatarUrls(userId: string, role: Role): Promise<{ avatarUrl: string | null }> {
+    if (role === Role.CLIENT) {
+      const p = await this.prisma.clientProfile.findUnique({
+        where: { userId },
+        select: { avatarUrl: true },
+      });
+      return { avatarUrl: p?.avatarUrl ?? null };
+    }
+    const p = await this.prisma.workerProfile.findUnique({
+      where: { userId },
+      select: { avatarUrl: true },
+    });
+    return { avatarUrl: p?.avatarUrl ?? null };
+  }
+
   async saveFcmToken(userId: string, token: string): Promise<void> {
     await this.prisma.user.update({
       where: { id: userId },

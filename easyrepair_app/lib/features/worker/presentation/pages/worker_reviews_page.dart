@@ -7,7 +7,7 @@ import '../../domain/entities/worker_review_entity.dart';
 import '../providers/worker_review_providers.dart';
 
 // ── Palette (matches existing worker UI) ─────────────────────────────────────
-const _kOrange = Color(0xFF1D9E75);
+const _kOrange = Color(0xFFDB6234);
 const _kDark   = Color(0xFF1A1A1A);
 const _kGray   = Color(0xFF6B7280);
 const _kLight  = Color(0xFF94A3B8);
@@ -61,7 +61,7 @@ class WorkerReviewsPage extends ConsumerWidget {
                   SliverToBoxAdapter(
                     child: summaryAsync.when(
                       loading: () => const SizedBox.shrink(),
-                      error: (_, __) => const SizedBox.shrink(),
+                      error: (err, st) => const SizedBox.shrink(),
                       data: (summary) => _SummaryBanner(
                         summary: summary,
                         reviews: reviews,
@@ -111,7 +111,7 @@ class _SummaryBanner extends StatelessWidget {
         border: Border.all(color: _kBorder),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -227,7 +227,7 @@ class _ReviewCard extends StatelessWidget {
         border: Border.all(color: _kBorder),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha: 0.03),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -297,7 +297,7 @@ class _ReviewCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: _kOrange.withOpacity(0.08),
+                    color: _kOrange.withValues(alpha: 0.08),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(

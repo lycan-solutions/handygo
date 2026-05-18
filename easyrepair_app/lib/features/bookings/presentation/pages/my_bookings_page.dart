@@ -51,7 +51,7 @@ class MyBookingsPage extends ConsumerWidget {
                             filter.hasActiveFilters,
                       )
                     : RefreshIndicator(
-                        color: const Color(0xFF1D9E75),
+                        color: const Color(0xFFDB6234),
                         backgroundColor: Colors.white,
                         onRefresh: () => ref
                             .read(bookingsNotifierProvider.notifier)
@@ -241,7 +241,7 @@ class _Header extends ConsumerWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 10, vertical: 5),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF1D9E75),
+                      color: const Color(0xFFDB6234),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
@@ -331,12 +331,12 @@ class _StatusTabs extends ConsumerWidget {
                   const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
               decoration: BoxDecoration(
                 color: isActive
-                    ? const Color(0xFF1D9E75)
+                    ? const Color(0xFFDB6234)
                     : Colors.white,
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: isActive
-                      ? const Color(0xFF1D9E75)
+                      ? const Color(0xFFDB6234)
                       : const Color(0xFFE2E8F0),
                 ),
               ),
@@ -443,7 +443,7 @@ class _EmptyState extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 24, vertical: 13),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF1D9E75),
+                    color: const Color(0xFFDB6234),
                     borderRadius: BorderRadius.circular(14),
                   ),
                   child: const Text(
@@ -519,7 +519,7 @@ class _ErrorState extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(
                     horizontal: 24, vertical: 12),
                 decoration: BoxDecoration(
-                  color: const Color(0xFF1D9E75),
+                  color: const Color(0xFFDB6234),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Text(

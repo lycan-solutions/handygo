@@ -10,6 +10,7 @@ import { ChatRepository, ConversationWithParticipants } from './chat.repository'
 import { ConversationResponseDto } from './dto/conversation-response.dto';
 import { MessageResponseDto } from './dto/message-response.dto';
 import { StorageService } from '../storage/storage.service';
+import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
 export class ChatService {
@@ -18,6 +19,7 @@ export class ChatService {
   constructor(
     private readonly chatRepository: ChatRepository,
     private readonly storageService: StorageService,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   // ── Conversations ─────────────────────────────────────────────────────────
@@ -44,7 +46,8 @@ export class ChatService {
       workerUserId,
     );
     if (existing) {
-      return this._toConversationDto(existing, clientUserId, Role.CLIENT);
+      const unreadCount = await this.chatRepository.countUnread(existing.id, clientUserId);
+      return this._toConversationDto(existing, clientUserId, Role.CLIENT, unreadCount);
     }
 
     // Create new conversation — client is the creator
@@ -53,7 +56,7 @@ export class ChatService {
       workerUserId,
       createdByUserId: clientUserId,
     });
-    return this._toConversationDto(created, clientUserId, Role.CLIENT);
+    return this._toConversationDto(created, clientUserId, Role.CLIENT, 0);
   }
 
   /**
@@ -107,7 +110,12 @@ export class ChatService {
       userId,
       role,
     );
-    return conversations.map((c) => this._toConversationDto(c, userId, role));
+    return Promise.all(
+      conversations.map(async (c) => {
+        const unreadCount = await this.chatRepository.countUnread(c.id, userId);
+        return this._toConversationDto(c, userId, role, unreadCount);
+      }),
+    );
   }
 
   // ── Messages ──────────────────────────────────────────────────────────────
@@ -158,6 +166,22 @@ export class ChatService {
       senderRole: role,
       text,
     });
+
+    const receiverId =
+      conversation.clientUserId === userId
+        ? conversation.workerUserId
+        : conversation.clientUserId;
+    const senderName = this._senderName(conversation, userId, role);
+    void this.notificationsService.notify({
+      userId: receiverId,
+      eventKey: 'chat.message',
+      title: senderName,
+      body: text.length > 100 ? text.slice(0, 100) + '…' : text,
+      entityType: 'conversation',
+      entityId: conversationId,
+      route: `/chat/${conversationId}`,
+    });
+
     return this._toMessageDto(message);
   }
 
@@ -191,6 +215,21 @@ export class ChatService {
       type: isVideo ? MessageType.VIDEO : MessageType.IMAGE,
       mediaUrl,
     });
+
+    const receiverId =
+      conversation.clientUserId === userId
+        ? conversation.workerUserId
+        : conversation.clientUserId;
+    void this.notificationsService.notify({
+      userId: receiverId,
+      eventKey: 'chat.message',
+      title: this._senderName(conversation, userId, role),
+      body: isVideo ? 'Sent a video' : 'Sent an image',
+      entityType: 'conversation',
+      entityId: conversationId,
+      route: `/chat/${conversationId}`,
+    });
+
     return this._toMessageDto(message);
   }
 
@@ -218,6 +257,21 @@ export class ChatService {
       senderRole: role,
       mediaUrl,
     });
+
+    const receiverId =
+      conversation.clientUserId === userId
+        ? conversation.workerUserId
+        : conversation.clientUserId;
+    void this.notificationsService.notify({
+      userId: receiverId,
+      eventKey: 'chat.message',
+      title: this._senderName(conversation, userId, role),
+      body: 'Sent a voice note',
+      entityType: 'conversation',
+      entityId: conversationId,
+      route: `/chat/${conversationId}`,
+    });
+
     return this._toMessageDto(message);
   }
 
@@ -240,6 +294,21 @@ export class ChatService {
       latitude,
       longitude,
     });
+
+    const receiverId =
+      conversation.clientUserId === userId
+        ? conversation.workerUserId
+        : conversation.clientUserId;
+    void this.notificationsService.notify({
+      userId: receiverId,
+      eventKey: 'chat.message',
+      title: this._senderName(conversation, userId, role),
+      body: 'Shared a location',
+      entityType: 'conversation',
+      entityId: conversationId,
+      route: `/chat/${conversationId}`,
+    });
+
     return this._toMessageDto(message);
   }
 
@@ -322,10 +391,25 @@ export class ChatService {
     if (!isParticipant) throw new ForbiddenException('Not a conversation participant');
   }
 
+  /** Return the display name of the sender for push notification titles. */
+  private _senderName(
+    conversation: ConversationWithParticipants,
+    senderId: string,
+    senderRole: Role,
+  ): string {
+    if (senderRole === Role.CLIENT) {
+      const p = conversation.clientUser.clientProfile;
+      return [p?.firstName, p?.lastName].filter(Boolean).join(' ') || 'Client';
+    }
+    const p = conversation.workerUser.workerProfile;
+    return [p?.firstName, p?.lastName].filter(Boolean).join(' ') || 'Worker';
+  }
+
   private _toConversationDto(
     c: ConversationWithParticipants,
     callerId: string,
     callerRole: Role,
+    unreadCount = 0,
   ): ConversationResponseDto {
     // Build otherParticipant from the opposite side's user record
     const otherParticipant =
@@ -355,6 +439,7 @@ export class ChatService {
       createdAt: c.createdAt.toISOString(),
       updatedAt: c.updatedAt.toISOString(),
       otherParticipant,
+      unreadCount,
     };
   }
 

@@ -6,11 +6,13 @@ import { WorkersRepository } from './workers.repository';
 import { WorkersProcessor, WORKERS_QUEUE } from './workers.processor';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { BidsModule } from '../bids/bids.module';
+import { StorageModule } from '../storage/storage.module';
 
 @Module({
   imports: [
     NotificationsModule,
     BidsModule,
+    StorageModule,
     BullModule.registerQueue({ name: WORKERS_QUEUE }),
   ],
   controllers: [WorkersController],

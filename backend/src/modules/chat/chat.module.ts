@@ -6,10 +6,12 @@ import { ChatGateway } from './chat.gateway';
 import { ChatService } from './chat.service';
 import { ChatRepository } from './chat.repository';
 import { StorageModule } from '../storage/storage.module';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
     StorageModule,
+    NotificationsModule,
     // Register JwtModule so ChatGateway can verify socket auth tokens
     // using the same secret as the HTTP JwtStrategy.
     JwtModule.registerAsync({

@@ -1,17 +1,22 @@
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../widgets/client_bottom_nav_bar.dart';
+import '../../../../core/network/api_client.dart';
 import '../../../../core/presentation/pages/general_info_page.dart';
 import '../../../../core/presentation/pages/privacy_policy_page.dart';
 import '../../../../core/presentation/pages/terms_conditions_page.dart';
 
-// ── Local avatar provider (stored in SharedPreferences) ───────────────────────
+const _kOrange = Color(0xFFDB6234);
+
+// ── Local avatar cache (user-specific key) ────────────────────────────────────
 
 final _localAvatarPathProvider =
     StateNotifierProvider<_LocalAvatarNotifier, String?>(
@@ -19,29 +24,31 @@ final _localAvatarPathProvider =
 );
 
 class _LocalAvatarNotifier extends StateNotifier<String?> {
-  static const _key = 'client_profile_avatar_path';
+  static String _key(String userId) => 'client_avatar_path_$userId';
 
-  _LocalAvatarNotifier() : super(null) {
-    _load();
+  _LocalAvatarNotifier() : super(null);
+
+  Future<void> load(String userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    state = prefs.getString(_key(userId));
   }
 
-  Future<void> _load() async {
+  Future<void> save(String userId, String path) async {
     final prefs = await SharedPreferences.getInstance();
-    state = prefs.getString(_key);
-  }
-
-  Future<void> save(String path) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_key, path);
+    await prefs.setString(_key(userId), path);
     state = path;
   }
 
-  Future<void> remove() async {
+  Future<void> remove(String userId) async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_key);
+    await prefs.remove(_key(userId));
     state = null;
   }
 }
+
+// ── Cloud avatar URL provider ─────────────────────────────────────────────────
+
+final _cloudAvatarUrlProvider = StateProvider<String?>((ref) => null);
 
 // ── Profile Page ──────────────────────────────────────────────────────────────
 
@@ -54,8 +61,59 @@ class ClientProfilePage extends ConsumerStatefulWidget {
 
 class _ClientProfilePageState extends ConsumerState<ClientProfilePage> {
   final _picker = ImagePicker();
+  bool _uploading = false;
+  bool _avatarInitialized = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _initAvatar());
+  }
+
+  Future<void> _initAvatar() async {
+    if (_avatarInitialized) return;
+    _avatarInitialized = true;
+    final user = ref.read(authStateProvider).valueOrNull;
+    if (user == null) return;
+
+    // Load local cache first
+    await ref.read(_localAvatarPathProvider.notifier).load(user.id);
+    final localPath = ref.read(_localAvatarPathProvider);
+    final localFile = localPath != null ? File(localPath) : null;
+
+    if (localFile != null && localFile.existsSync()) return; // cache hit
+
+    // No local cache — fetch cloud URL from backend
+    try {
+      final dio = ref.read(dioProvider);
+      final resp = await dio.get<Map<String, dynamic>>('/auth/avatar');
+      final url = resp.data?['data']?['avatarUrl'] as String?;
+      if (url != null && url.isNotEmpty && mounted) {
+        ref.read(_cloudAvatarUrlProvider.notifier).state = url;
+        // Download and cache locally
+        _cacheRemoteImage(url, user.id);
+      }
+    } catch (_) {}
+  }
+
+  Future<void> _cacheRemoteImage(String url, String userId) async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      final ext = url.contains('.') ? '.${url.split('.').last.split('?').first}' : '.jpg';
+      final path = '${dir.path}/avatar_client_$userId$ext';
+      final dio = Dio();
+      await dio.download(url, path);
+      if (mounted && File(path).existsSync()) {
+        await ref.read(_localAvatarPathProvider.notifier).save(userId, path);
+        ref.read(_cloudAvatarUrlProvider.notifier).state = null;
+      }
+    } catch (_) {}
+  }
 
   Future<void> _changeAvatar() async {
+    final user = ref.read(authStateProvider).valueOrNull;
+    if (user == null) return;
+
     final choice = await showModalBottomSheet<_AvatarAction>(
       context: context,
       backgroundColor: Colors.white,
@@ -67,7 +125,8 @@ class _ClientProfilePageState extends ConsumerState<ClientProfilePage> {
     if (choice == null || !mounted) return;
 
     if (choice == _AvatarAction.remove) {
-      await ref.read(_localAvatarPathProvider.notifier).remove();
+      await ref.read(_localAvatarPathProvider.notifier).remove(user.id);
+      ref.read(_cloudAvatarUrlProvider.notifier).state = null;
       return;
     }
 
@@ -81,18 +140,46 @@ class _ClientProfilePageState extends ConsumerState<ClientProfilePage> {
       maxWidth: 600,
     );
     if (file == null || !mounted) return;
-    await ref.read(_localAvatarPathProvider.notifier).save(file.path);
+
+    // Save locally immediately for instant feedback
+    await ref.read(_localAvatarPathProvider.notifier).save(user.id, file.path);
+    ref.read(_cloudAvatarUrlProvider.notifier).state = null;
+
+    // Upload to cloud in background
+    setState(() => _uploading = true);
+    try {
+      final dio = ref.read(dioProvider);
+      final formData = FormData.fromMap({
+        'file': await MultipartFile.fromFile(file.path,
+            filename: 'avatar.jpg', contentType: DioMediaType('image', 'jpeg')),
+      });
+      await dio.patch<void>('/auth/avatar', data: formData);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text(
+              'Profile image saved on this device. Cloud sync is not available yet.',
+            ),
+            backgroundColor: Colors.orange.shade700,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authStateProvider).valueOrNull;
     final avatarPath = ref.watch(_localAvatarPathProvider);
+    final cloudUrl = ref.watch(_cloudAvatarUrlProvider);
     final firstName = user?.firstName ?? '';
     final lastName = user?.lastName ?? '';
     final fullName = '$firstName $lastName'.trim();
-    final initials =
-        firstName.isNotEmpty ? firstName[0].toUpperCase() : '?';
+    final initials = firstName.isNotEmpty ? firstName[0].toUpperCase() : '?';
 
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
@@ -103,7 +190,6 @@ class _ClientProfilePageState extends ConsumerState<ClientProfilePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ── Top bar ─────────────────────────────────────────────
               const Padding(
                 padding: EdgeInsets.fromLTRB(20, 20, 20, 0),
                 child: Text(
@@ -123,32 +209,36 @@ class _ClientProfilePageState extends ConsumerState<ClientProfilePage> {
                 child: Stack(
                   clipBehavior: Clip.none,
                   children: [
-                    // Avatar circle
                     Container(
                       width: 88,
                       height: 88,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: const Color(0xFF1D9E75),
+                        color: _kOrange,
                         boxShadow: [
                           BoxShadow(
-                            color:
-                                const Color(0xFF1D9E75).withValues(alpha: 0.25),
+                            color: _kOrange.withValues(alpha: 0.25),
                             blurRadius: 16,
                             offset: const Offset(0, 4),
                           ),
                         ],
                       ),
                       child: ClipOval(
-                        child: _buildAvatarContent(avatarPath, initials),
+                        child: _uploading
+                            ? const Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation(Colors.white),
+                                ),
+                              )
+                            : _buildAvatarContent(avatarPath, cloudUrl, initials),
                       ),
                     ),
-                    // Edit badge
                     Positioned(
                       bottom: 0,
                       right: 0,
                       child: GestureDetector(
-                        onTap: _changeAvatar,
+                        onTap: _uploading ? null : _changeAvatar,
                         child: Container(
                           width: 28,
                           height: 28,
@@ -169,7 +259,7 @@ class _ClientProfilePageState extends ConsumerState<ClientProfilePage> {
                           child: const Icon(
                             Icons.edit_rounded,
                             size: 14,
-                            color: Color(0xFF1D9E75),
+                            color: _kOrange,
                           ),
                         ),
                       ),
@@ -180,7 +270,6 @@ class _ClientProfilePageState extends ConsumerState<ClientProfilePage> {
 
               const SizedBox(height: 14),
 
-              // ── Name & phone ─────────────────────────────────────────
               if (user != null) ...[
                 Center(
                   child: Text(
@@ -206,7 +295,6 @@ class _ClientProfilePageState extends ConsumerState<ClientProfilePage> {
 
               const SizedBox(height: 32),
 
-              // ── Settings list ────────────────────────────────────────
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
@@ -254,8 +342,6 @@ class _ClientProfilePageState extends ConsumerState<ClientProfilePage> {
                       ],
                     ),
                     const SizedBox(height: 32),
-
-                    // ── Logout ─────────────────────────────────────────
                     _LogoutButton(ref: ref),
                   ],
                 ),
@@ -269,24 +355,35 @@ class _ClientProfilePageState extends ConsumerState<ClientProfilePage> {
     );
   }
 
-  Widget _buildAvatarContent(String? avatarPath, String initials) {
-    if (avatarPath != null) {
-      final file = File(avatarPath);
+  Widget _buildAvatarContent(String? localPath, String? cloudUrl, String initials) {
+    if (localPath != null) {
+      final file = File(localPath);
       if (file.existsSync()) {
         return Image.file(file, fit: BoxFit.cover, width: 88, height: 88);
       }
     }
-    return Center(
-      child: Text(
-        initials,
-        style: const TextStyle(
-          fontSize: 30,
-          color: Colors.white,
-          fontWeight: FontWeight.w700,
-        ),
-      ),
-    );
+    if (cloudUrl != null && cloudUrl.isNotEmpty) {
+      return Image.network(
+        cloudUrl,
+        fit: BoxFit.cover,
+        width: 88,
+        height: 88,
+        errorBuilder: (ctx, err, st) => _initialsWidget(initials),
+      );
+    }
+    return _initialsWidget(initials);
   }
+
+  Widget _initialsWidget(String initials) => Center(
+        child: Text(
+          initials,
+          style: const TextStyle(
+            fontSize: 30,
+            color: Colors.white,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      );
 }
 
 // ── Avatar picker sheet ───────────────────────────────────────────────────────
@@ -327,21 +424,18 @@ class _AvatarPickerSheet extends StatelessWidget {
               _AvatarOption(
                 icon: Icons.camera_alt_outlined,
                 label: 'Camera',
-                onTap: () =>
-                    Navigator.pop(context, _AvatarAction.camera),
+                onTap: () => Navigator.pop(context, _AvatarAction.camera),
               ),
               _AvatarOption(
                 icon: Icons.photo_library_outlined,
                 label: 'Gallery',
-                onTap: () =>
-                    Navigator.pop(context, _AvatarAction.gallery),
+                onTap: () => Navigator.pop(context, _AvatarAction.gallery),
               ),
               _AvatarOption(
                 icon: Icons.delete_outline_rounded,
                 label: 'Remove',
                 iconColor: const Color(0xFFEF4444),
-                onTap: () =>
-                    Navigator.pop(context, _AvatarAction.remove),
+                onTap: () => Navigator.pop(context, _AvatarAction.remove),
               ),
             ],
           ),
@@ -366,7 +460,7 @@ class _AvatarOption extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = iconColor ?? const Color(0xFF1D9E75);
+    final color = iconColor ?? _kOrange;
     return GestureDetector(
       onTap: onTap,
       child: Column(
@@ -400,7 +494,6 @@ class _AvatarOption extends StatelessWidget {
 
 class _SectionLabel extends StatelessWidget {
   final String label;
-
   const _SectionLabel({required this.label});
 
   @override
@@ -419,7 +512,6 @@ class _SectionLabel extends StatelessWidget {
 
 class _SettingsCard extends StatelessWidget {
   final List<_SettingsItem> items;
-
   const _SettingsCard({required this.items});
 
   @override
@@ -463,8 +555,7 @@ class _SettingsItem extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(16),
           child: Padding(
-            padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
             child: Row(
               children: [
                 Container(
@@ -474,8 +565,7 @@ class _SettingsItem extends StatelessWidget {
                     color: const Color(0xFFFFF0E8),
                     borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(icon,
-                      size: 18, color: const Color(0xFF1D9E75)),
+                  child: Icon(icon, size: 18, color: _kOrange),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -508,7 +598,6 @@ class _SettingsItem extends StatelessWidget {
 
 class _LogoutButton extends StatelessWidget {
   final WidgetRef ref;
-
   const _LogoutButton({required this.ref});
 
   @override
@@ -516,8 +605,7 @@ class _LogoutButton extends StatelessWidget {
     return SizedBox(
       width: double.infinity,
       child: OutlinedButton.icon(
-        onPressed: () =>
-            ref.read(logoutNotifierProvider.notifier).logout(),
+        onPressed: () => ref.read(logoutNotifierProvider.notifier).logout(),
         icon: const Icon(Icons.logout_rounded, size: 18),
         label: const Text('Logout'),
         style: OutlinedButton.styleFrom(

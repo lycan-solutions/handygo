@@ -18,12 +18,12 @@ class UrgencyBadge extends StatelessWidget {
     return Container(
       padding: EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
       decoration: BoxDecoration(
-        color: isUrgent ? const Color(0xFFFFF7ED) : const Color(0xFFF0FDF4),
+        color: isUrgent ? const Color(0xFFFFF1F2) : const Color(0xFFF1F5F9),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
           color: isUrgent
-              ? const Color(0xFFFED7AA)
-              : const Color(0xFFBBF7D0),
+              ? const Color(0xFFFECACA)
+              : const Color(0xFFE2E8F0),
           width: 0.8,
         ),
       ),
@@ -41,8 +41,8 @@ class UrgencyBadge extends StatelessWidget {
               fontSize: fontSize,
               fontWeight: FontWeight.w600,
               color: isUrgent
-                  ? const Color(0xFFC2410C)
-                  : const Color(0xFF15803D),
+                  ? const Color(0xFFDC2626)
+                  : const Color(0xFF6B7280),
               letterSpacing: 0.2,
             ),
           ),

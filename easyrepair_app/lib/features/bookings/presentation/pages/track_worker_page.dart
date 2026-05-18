@@ -14,7 +14,7 @@ import '../providers/booking_providers.dart';
 import '../../../chat/presentation/providers/chat_providers.dart';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
-const _kGreen  = Color(0xFF1D9E75);
+const _kGreen  = Color(0xFFDB6234);
 const _kDark   = Color(0xFF1A1A1A);
 const _kLight  = Color(0xFF94A3B8);
 const _kBorder = Color(0xFFE2E8F0);
@@ -212,7 +212,7 @@ class _StatusCard extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFF1B3829), Color(0xFF0F5C3D)],
+          colors: [Color(0xFF8B3010), Color(0xFFDB6234)],
         ),
         borderRadius: BorderRadius.circular(18),
       ),
@@ -544,7 +544,7 @@ class _DistanceEtaCard extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: hasDistance
-              ? [_kGreen, const Color(0xFF0F8060)]
+              ? [_kGreen, const Color(0xFFB84E25)]
               : [const Color(0xFF64748B), const Color(0xFF475569)],
         ),
         borderRadius: BorderRadius.circular(18),
@@ -901,9 +901,9 @@ class _GreenLiveBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0FDF4),
+        color: const Color(0xFFFFF0EB),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFBBF7D0)),
+        border: Border.all(color: const Color(0xFFFFD0B5)),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -912,7 +912,7 @@ class _GreenLiveBadge extends StatelessWidget {
             width: 5,
             height: 5,
             decoration: const BoxDecoration(
-              color: Color(0xFF22C55E),
+              color: _kGreen,
               shape: BoxShape.circle,
             ),
           ),
@@ -922,7 +922,7 @@ class _GreenLiveBadge extends StatelessWidget {
             style: TextStyle(
               fontSize: 10,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF15803D),
+              color: _kGreen,
             ),
           ),
         ],

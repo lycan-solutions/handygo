@@ -39,6 +39,8 @@ class ChatConversationsNotifier
       final idx = current.indexWhere((c) => c.id == conversationId);
       if (idx == -1) return;
       final c = current[idx];
+      // Preserve unreadCount from socket payload if provided, else keep current.
+      final socketUnread = data['unreadCount'] as int?;
       final updated = ConversationEntity(
         id: c.id,
         clientUserId: c.clientUserId,
@@ -49,6 +51,7 @@ class ChatConversationsNotifier
         createdAt: c.createdAt,
         updatedAt: c.updatedAt,
         otherParticipant: c.otherParticipant,
+        unreadCount: socketUnread ?? c.unreadCount,
       );
       upsertConversation(updated);
     });

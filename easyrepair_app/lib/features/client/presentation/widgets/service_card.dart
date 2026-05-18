@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../../core/presentation/responsive_utils.dart';
 
-const _kGreen = Color(0xFF1D9E75);
+const _kAccent = Color(0xFF1D9E75);
 
 class ServiceCard extends StatelessWidget {
   final String title;
@@ -13,6 +13,11 @@ class ServiceCard extends StatelessWidget {
   final bool isSelected;
   final String? imagePath;
 
+  /// When true the card always renders as an image-tile (homepage style):
+  /// image/placeholder rectangle on top, title below, no Book Now button.
+  /// When false (booking form selector) it uses the emoji+Book Now layout.
+  final bool useImageStyle;
+
   const ServiceCard({
     super.key,
     required this.title,
@@ -22,20 +27,26 @@ class ServiceCard extends StatelessWidget {
     this.onTap,
     this.isSelected = false,
     this.imagePath,
+    this.useImageStyle = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (imagePath != null) {
+    // Homepage / image-tile style: always use _ImageTile (with emoji fallback).
+    if (useImageStyle || imagePath != null) {
       return GestureDetector(
         onTap: onTap,
         child: _ImageTile(
-          imagePath: imagePath!,
+          imagePath: imagePath,
+          emoji: emoji,
           title: title,
           backgroundColor: backgroundColor,
+          emojiBackgroundColor: emojiBackgroundColor,
         ),
       );
     }
+
+    // Booking form selector style: emoji + Book Now / Selected badge.
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -43,7 +54,7 @@ class ServiceCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: backgroundColor,
           borderRadius: BorderRadius.circular(16),
-          border: isSelected ? Border.all(color: _kGreen, width: 2) : null,
+          border: isSelected ? Border.all(color: _kAccent, width: 2) : null,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: isSelected ? 0.12 : 0.07),
@@ -63,17 +74,23 @@ class ServiceCard extends StatelessWidget {
   }
 }
 
-// ── Image tile card (no Book Now, name below image) ───────────────────────────
+// ── Image tile card ────────────────────────────────────────────────────────────
+// Used on homepage. If imagePath is null shows a colored placeholder with emoji.
+// No Book Now, no price, no overflow.
 
 class _ImageTile extends StatelessWidget {
-  final String imagePath;
+  final String? imagePath;
+  final String emoji;
   final String title;
   final Color backgroundColor;
+  final Color emojiBackgroundColor;
 
   const _ImageTile({
     required this.imagePath,
+    required this.emoji,
     required this.title,
     required this.backgroundColor,
+    required this.emojiBackgroundColor,
   });
 
   @override
@@ -88,23 +105,17 @@ class _ImageTile extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           child: AspectRatio(
             aspectRatio: 1 / 0.55,
-            child: Image.asset(
-              imagePath,
-              width: double.infinity,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => Container(
-                color: backgroundColor,
-                alignment: Alignment.center,
-                child: const Icon(
-                  Icons.home_repair_service_rounded,
-                  color: Colors.grey,
-                  size: 32,
-                ),
-              ),
-            ),
+            child: imagePath != null
+                ? Image.asset(
+                    imagePath!,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => _placeholder(),
+                  )
+                : _placeholder(),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Text(
           title,
           style: TextStyle(
@@ -118,9 +129,17 @@ class _ImageTile extends StatelessWidget {
       ],
     );
   }
+
+  Widget _placeholder() {
+    return Container(
+      color: backgroundColor,
+      alignment: Alignment.center,
+      child: Text(emoji, style: const TextStyle(fontSize: 36)),
+    );
+  }
 }
 
-// ── Emoji-based card layout (used by post_job_page selector) ──────────────────
+// ── Emoji-based card layout (booking form service selector only) ───────────────
 
 class _EmojiLayout extends StatelessWidget {
   final String emoji;
@@ -166,7 +185,7 @@ class _EmojiLayout extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
-              color: _kGreen,
+              color: _kAccent,
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(

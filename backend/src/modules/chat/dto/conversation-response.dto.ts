@@ -18,4 +18,6 @@ export class ConversationResponseDto {
   updatedAt: string;
   /** The other participant from the perspective of the caller */
   otherParticipant: ConversationParticipantDto;
+  /** Messages sent by others in this conversation that the caller hasn't seen yet */
+  unreadCount: number;
 }

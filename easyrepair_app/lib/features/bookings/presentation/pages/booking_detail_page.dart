@@ -25,7 +25,7 @@ void _goBack(BuildContext context) {
 }
 
 // ── Palette ───────────────────────────────────────────────────────────────────
-const _kGreen  = Color(0xFF1D9E75);
+const _kGreen  = Color(0xFFDB6234);
 const _kDark   = Color(0xFF1A1A1A);
 const _kGray   = Color(0xFF6B7280);
 const _kLight  = Color(0xFF94A3B8);
@@ -461,16 +461,12 @@ class _StatusCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          Container(
+          SizedBox(
             width: 52,
             height: 52,
-            decoration: BoxDecoration(
-              color: const Color(0xFFFFF0EB),
-              borderRadius: BorderRadius.circular(14),
-            ),
             child: Center(
               child: Text(booking.serviceEmoji,
-                  style: const TextStyle(fontSize: 24)),
+                  style: const TextStyle(fontSize: 32)),
             ),
           ),
           const SizedBox(width: 14),
@@ -549,7 +545,7 @@ class _LocationCard extends StatelessWidget {
                 child: const Icon(
                   Icons.location_on_rounded,
                   size: 18,
-                  color: Color(0xFF1D9E75),
+                  color: _kGreen,
                 ),
               ),
               const SizedBox(width: 10),
@@ -841,7 +837,7 @@ class _PricingCard extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFF15803D),
+                    color: _kDark,
                   ),
                 ),
               ],
@@ -1086,9 +1082,9 @@ class _LiveBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0FDF4),
+        color: const Color(0xFFFFF0EB),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFBBF7D0), width: 1),
+        border: Border.all(color: const Color(0xFFFFD0B5), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -1097,7 +1093,7 @@ class _LiveBadge extends StatelessWidget {
             width: 6,
             height: 6,
             decoration: const BoxDecoration(
-              color: Color(0xFF22C55E),
+              color: _kGreen,
               shape: BoxShape.circle,
             ),
           ),
@@ -1107,7 +1103,7 @@ class _LiveBadge extends StatelessWidget {
             style: TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w600,
-              color: Color(0xFF15803D),
+              color: _kGreen,
               letterSpacing: 0.1,
             ),
           ),
@@ -1267,9 +1263,7 @@ class _DistanceBar extends StatelessWidget {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: isClose
-                  ? const Color(0xFFF0FDF4)
-                  : const Color(0xFFF0F9FF),
+              color: const Color(0xFFFFF0EB),
               borderRadius: BorderRadius.circular(10),
             ),
             child: Icon(
@@ -1277,9 +1271,7 @@ class _DistanceBar extends StatelessWidget {
                   ? Icons.directions_walk_rounded
                   : Icons.directions_car_rounded,
               size: 18,
-              color: isClose
-                  ? const Color(0xFF16A34A)
-                  : const Color(0xFF1D9E75),
+              color: _kGreen,
             ),
           ),
           const SizedBox(width: 12),
@@ -1695,7 +1687,7 @@ class _ActionButtons extends ConsumerWidget {
           _FullBtn(
             label: 'Chat with Worker',
             icon: Icons.chat_bubble_outline_rounded,
-            color: const Color(0xFF1D9E75),
+            color: _kGreen,
             bgColor: const Color(0xFFFFF0EB),
             onTap: () => context.push('/client/chat'),
           ),

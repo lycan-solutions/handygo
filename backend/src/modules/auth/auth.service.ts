@@ -3,6 +3,7 @@ import {
   ConflictException,
   UnauthorizedException,
   ForbiddenException,
+  NotFoundException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -10,6 +11,7 @@ import * as bcrypt from 'bcrypt';
 import { v4 as uuidv4 } from 'uuid';
 import { Role } from '@prisma/client';
 import { AuthRepository } from './auth.repository';
+import { StorageService } from '../storage/storage.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
@@ -21,6 +23,7 @@ export class AuthService {
     private readonly authRepository: AuthRepository,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
+    private readonly storageService: StorageService,
   ) {}
 
   async register(dto: RegisterDto): Promise<AuthResponseDto> {
@@ -198,5 +201,39 @@ export class AuthService {
 
   async saveFcmToken(userId: string, token: string): Promise<void> {
     await this.authRepository.saveFcmToken(userId, token);
+  }
+
+  /** Get the current avatar URL for any user (client or worker). */
+  async getAvatarUrl(userId: string): Promise<{ avatarUrl: string | null }> {
+    const user = await this.authRepository.findUserById(userId);
+    if (!user) throw new NotFoundException('User not found');
+    return this.authRepository.getAvatarUrls(userId, user.role);
+  }
+
+  /** Upload a new profile picture and persist the URL for the user. */
+  async uploadAvatar(
+    userId: string,
+    buffer: Buffer,
+    originalName: string,
+    mimeType: string,
+  ): Promise<{ avatarUrl: string }> {
+    const user = await this.authRepository.findUserById(userId);
+    if (!user) throw new NotFoundException('User not found');
+
+    const avatarUrl = await this.storageService.upload(
+      buffer,
+      originalName,
+      mimeType,
+      'avatars',
+    );
+
+    if (user.role === Role.CLIENT) {
+      await this.authRepository.updateClientAvatarUrl(userId, avatarUrl);
+    } else {
+      // Workers: update via workerProfile — re-use the shared method
+      await this.authRepository.updateWorkerAvatarUrl(userId, avatarUrl);
+    }
+
+    return { avatarUrl };
   }
 }

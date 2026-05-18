@@ -291,60 +291,98 @@ class ClientHomePage extends ConsumerWidget {
 
                     const SizedBox(height: 24),
 
-                    // ── Categorized service sections (dynamic from backend) ─
+                    // ── Categorized service sections (planned list + backend) ─
                     Consumer(
                       builder: (_, cRef, _) {
-                        final async = cRef.watch(allCategoriesProvider);
-                        final categories = async.valueOrNull;
+                        final backendCategories =
+                            cRef.watch(allCategoriesProvider).valueOrNull ?? [];
 
-                        // While loading or on error, fall back to static data.
-                        if (categories == null || categories.isEmpty) {
-                          return Column(
-                            children: kServiceCategories.map(
-                              (cat) => _ServiceSection(
-                                heading: cat.heading,
-                                items: cat.items.map((s) => _HomeServiceItem(
-                                  displayTitle: s.title,
-                                  backendName: s.backendName,
-                                  emoji: s.emoji,
-                                  bg: s.bg,
-                                  emojiBg: s.emojiBg,
-                                  imagePath: s.imagePath,
-                                )).toList(),
-                                onServiceTap: (backendName) => context.push(
-                                  '/client/post-job?service=${Uri.encodeComponent(backendName)}',
-                                ),
-                              ),
-                            ).toList(),
-                          );
+                        // Build a set of backend names for fast availability check.
+                        final availableNames = <String>{
+                          for (final c in backendCategories)
+                            c.name.toLowerCase(),
+                        };
+
+                        // Helper: build items for a planned section, marking
+                        // availability from backend. Also collect "extra" backend
+                        // categories not in the planned list for "More Services".
+                        final plannedBackendNames = <String>{};
+
+                        List<_HomeServiceItem> itemsFor(
+                            List<ServiceItem> planned) {
+                          return planned.map((s) {
+                            plannedBackendNames.add(s.backendName.toLowerCase());
+                            final available = availableNames.isEmpty ||
+                                availableNames
+                                    .contains(s.backendName.toLowerCase());
+                            return _HomeServiceItem(
+                              displayTitle: s.title,
+                              backendName: s.backendName,
+                              emoji: s.emoji,
+                              bg: s.bg,
+                              emojiBg: s.emojiBg,
+                              imagePath: s.imagePath,
+                              isAvailable: available,
+                            );
+                          }).toList();
                         }
 
-                        // Build sections dynamically from backend categories.
-                        final sections = <String, List<_HomeServiceItem>>{};
-                        for (final c in categories) {
-                          final section = sectionForCategory(c.name);
-                          sections.putIfAbsent(section, () => []).add(
-                            _HomeServiceItem(
-                              displayTitle: c.name,
-                              backendName: c.name,
-                              emoji: emojiForCategory(c.name),
-                              bg: bgColorForCategory(c.name),
-                              emojiBg: emojiBgForCategory(c.name),
-                              imagePath: imagePathForCategory(c.name),
+                        // Build planned sections in fixed order.
+                        final sections = [
+                          for (final cat in kServiceCategories)
+                            _SectionData(
+                              heading: cat.heading,
+                              items: itemsFor(cat.items),
                             ),
-                          );
+                        ];
+
+                        // Collect unknown backend categories → "More Services".
+                        final extras = backendCategories
+                            .where((c) => !plannedBackendNames
+                                .contains(c.name.toLowerCase()))
+                            .map((c) => _HomeServiceItem(
+                                  displayTitle: c.name,
+                                  backendName: c.name,
+                                  emoji: emojiForCategory(c.name),
+                                  bg: bgColorForCategory(c.name),
+                                  emojiBg: emojiBgForCategory(c.name),
+                                  imagePath: imagePathForCategory(c.name),
+                                  isAvailable: true,
+                                ))
+                            .toList();
+
+                        if (extras.isNotEmpty) {
+                          sections.add(_SectionData(
+                            heading: 'More Services',
+                            items: extras,
+                          ));
+                        }
+
+                        void onTap(_HomeServiceItem item) {
+                          if (item.isAvailable) {
+                            context.push(
+                              '/client/post-job?service='
+                              '${Uri.encodeComponent(item.backendName)}',
+                            );
+                          } else {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  '${item.displayTitle} — coming soon!',
+                                ),
+                                behavior: SnackBarBehavior.floating,
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          }
                         }
 
                         return Column(
-                          children: kSectionOrder
-                              .where((h) => sections.containsKey(h))
-                              .map((heading) => _ServiceSection(
-                                    heading: heading,
-                                    items: sections[heading]!,
-                                    onServiceTap: (backendName) =>
-                                        context.push(
-                                      '/client/post-job?service=${Uri.encodeComponent(backendName)}',
-                                    ),
+                          children: sections
+                              .map((sec) => _ServiceSection(
+                                    heading: sec.heading,
+                                    items: sec.items,
+                                    onItemTap: onTap,
                                   ))
                               .toList(),
                         );
@@ -368,7 +406,7 @@ class ClientHomePage extends ConsumerWidget {
   }
 }
 
-// ── Lightweight item model used on homepage ───────────────────────────────────
+// ── Data models ───────────────────────────────────────────────────────────────
 
 class _HomeServiceItem {
   final String displayTitle;
@@ -377,6 +415,7 @@ class _HomeServiceItem {
   final Color bg;
   final Color emojiBg;
   final String? imagePath;
+  final bool isAvailable;
 
   const _HomeServiceItem({
     required this.displayTitle,
@@ -385,7 +424,14 @@ class _HomeServiceItem {
     required this.bg,
     required this.emojiBg,
     this.imagePath,
+    this.isAvailable = true,
   });
+}
+
+class _SectionData {
+  final String heading;
+  final List<_HomeServiceItem> items;
+  const _SectionData({required this.heading, required this.items});
 }
 
 // ── One categorized service section ──────────────────────────────────────────
@@ -393,67 +439,75 @@ class _HomeServiceItem {
 class _ServiceSection extends StatelessWidget {
   final String heading;
   final List<_HomeServiceItem> items;
-  final void Function(String backendName) onServiceTap;
+  final void Function(_HomeServiceItem item) onItemTap;
 
   const _ServiceSection({
     required this.heading,
     required this.items,
-    required this.onServiceTap,
+    required this.onItemTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.sizeOf(context).width;
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 6),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            heading,
-            style: TextStyle(
-              fontSize: rFont(screenWidth, 16, min: 14, max: 18),
-              fontWeight: FontWeight.w700,
-              color: _kDark,
+    // cardW derived from screen width minus the outer 20+20 padding that the
+    // parent SingleChildScrollView already applies, so heading and cards share
+    // the same left edge automatically.
+    const hPad = 20.0; // must match parent SingleChildScrollView padding
+    const spacing = 10.0;
+    final availableW = screenWidth - hPad * 2;
+    final cardW = (availableW - spacing) / 2.28;
+    final imageH = cardW * 0.55;
+    final cardH = imageH + 30; // image + 6px gap + ~18px title + 6px bottom
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          heading,
+          style: TextStyle(
+            fontSize: rFont(screenWidth, 16, min: 14, max: 18),
+            fontWeight: FontWeight.w700,
+            color: _kDark,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Align(
+          alignment: Alignment.centerLeft,
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            clipBehavior: Clip.none,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: items.map((s) {
+                return Padding(
+                  padding: const EdgeInsets.only(right: spacing),
+                  child: SizedBox(
+                    width: cardW,
+                    height: cardH,
+                    child: Opacity(
+                      opacity: s.isAvailable ? 1.0 : 0.55,
+                      child: ServiceCard(
+                        title: s.displayTitle,
+                        emoji: s.emoji,
+                        backgroundColor: s.bg,
+                        emojiBackgroundColor: s.emojiBg,
+                        imagePath: s.imagePath,
+                        useImageStyle: true,
+                        onTap: () => onItemTap(s),
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
             ),
           ),
-          const SizedBox(height: 8),
-          LayoutBuilder(
-            builder: (context, constraints) {
-              const spacing = 8.0;
-              final cardW =
-                  ((constraints.maxWidth - spacing) / 2.28).clamp(130.0, 175.0);
-              final imageH = cardW * 0.55;
-              final cardH = imageH + 28;
-
-              return SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                clipBehavior: Clip.none,
-                child: Row(
-                  children: items.map((s) {
-                    return Padding(
-                      padding: const EdgeInsets.only(right: spacing),
-                      child: SizedBox(
-                        width: cardW,
-                        height: cardH,
-                        child: ServiceCard(
-                          title: s.displayTitle,
-                          emoji: s.emoji,
-                          backgroundColor: s.bg,
-                          emojiBackgroundColor: s.emojiBg,
-                          imagePath: s.imagePath,
-                          onTap: () => onServiceTap(s.backendName),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
+        ),
+        const SizedBox(height: 20),
+      ],
     );
   }
 }

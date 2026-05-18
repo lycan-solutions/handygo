@@ -34,6 +34,7 @@ class ConversationEntity {
   final String createdAt;
   final String updatedAt;
   final ConversationParticipantEntity otherParticipant;
+  final int unreadCount;
 
   const ConversationEntity({
     required this.id,
@@ -45,6 +46,7 @@ class ConversationEntity {
     required this.createdAt,
     required this.updatedAt,
     required this.otherParticipant,
+    this.unreadCount = 0,
   });
 }
 

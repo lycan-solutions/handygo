@@ -244,6 +244,9 @@ class BookingModel {
       'painter' || 'painting' => '🎨',
       'carpenter' || 'carpentry' => '🪚',
       'cleaner' || 'cleaning' => '🧹',
+      'pest control' || 'pest' => '🐛',
+      'car wash' => '🚗',
+      'gardener' || 'gardening' => '🌿',
       _ => '🛠️',
     };
   }

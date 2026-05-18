@@ -82,6 +82,14 @@ export class WorkersRepository {
 
   // ── Profile ──────────────────────────────────────────────────────────────
 
+  /** Update the avatarUrl for a worker profile. */
+  async updateAvatarUrl(workerProfileId: string, avatarUrl: string): Promise<void> {
+    await this.prisma.workerProfile.update({
+      where: { id: workerProfileId },
+      data: { avatarUrl },
+    });
+  }
+
   /** Find a WorkerProfile by userId (includes skills). */
   async findByUserId(userId: string): Promise<WorkerProfileWithSkills | null> {
     return this.prisma.workerProfile.findUnique({

@@ -13,7 +13,7 @@ import '../../../bookings/presentation/providers/booking_providers.dart';
 import '../../../chat/presentation/providers/chat_providers.dart';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
-const _kGreen  = Color(0xFF1D9E75);
+const _kGreen  = Color(0xFFDB6234);
 const _kDark   = Color(0xFF1A1A1A);
 const _kGray   = Color(0xFF6B7280);
 const _kLight  = Color(0xFF94A3B8);

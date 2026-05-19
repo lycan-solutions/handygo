@@ -239,6 +239,10 @@ export class ChatRepository {
     senderRole: Role;
     type: MessageType; // IMAGE or VIDEO
     mediaUrl: string;
+    storageKey?: string;
+    mimeType?: string;
+    fileName?: string;
+    sizeBytes?: number;
   }) {
     const preview = data.type === MessageType.IMAGE ? '📷 Image' : '🎥 Video';
     const now = new Date();
@@ -250,6 +254,10 @@ export class ChatRepository {
           senderRole: data.senderRole,
           type: data.type,
           mediaUrl: data.mediaUrl,
+          storageKey: data.storageKey ?? null,
+          mimeType: data.mimeType ?? null,
+          fileName: data.fileName ?? null,
+          sizeBytes: data.sizeBytes ?? null,
         },
       }),
       this.prisma.conversation.update({
@@ -265,6 +273,10 @@ export class ChatRepository {
     senderUserId: string;
     senderRole: Role;
     mediaUrl: string;
+    storageKey?: string;
+    mimeType?: string;
+    fileName?: string;
+    sizeBytes?: number;
   }) {
     const preview = '🎙️ Voice message';
     const now = new Date();
@@ -276,6 +288,10 @@ export class ChatRepository {
           senderRole: data.senderRole,
           type: MessageType.VOICE,
           mediaUrl: data.mediaUrl,
+          storageKey: data.storageKey ?? null,
+          mimeType: data.mimeType ?? null,
+          fileName: data.fileName ?? null,
+          sizeBytes: data.sizeBytes ?? null,
         },
       }),
       this.prisma.conversation.update({

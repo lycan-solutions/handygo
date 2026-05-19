@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../../core/notifications/notification_navigator.dart';
+import '../../../../../features/auth/presentation/providers/auth_providers.dart';
 import '../../domain/entities/notification_entity.dart';
 import '../providers/notification_providers.dart';
 
@@ -111,9 +113,22 @@ class NotificationListPage extends ConsumerWidget {
     if (!notification.isRead) {
       ref.read(notificationsProvider.notifier).markRead(notification.id);
     }
-    final route = notification.route;
-    if (route != null && route.isNotEmpty) {
-      context.push(route);
+
+    final user = ref.read(authStateProvider).valueOrNull;
+    final isWorker = user?.isWorker ?? false;
+
+    // Build a data map mirroring FCM payload so NotificationNavigator can route it.
+    final data = <String, dynamic>{
+      if (notification.entityType != null) 'entityType': notification.entityType,
+      if (notification.entityId != null) 'entityId': notification.entityId,
+      if (notification.bookingId != null) 'bookingId': notification.bookingId,
+      if (notification.route != null) 'route': notification.route,
+    };
+
+    final destination =
+        NotificationNavigator.resolveRoute(data, isWorker: isWorker);
+    if (destination != null && destination.isNotEmpty) {
+      context.push(destination);
     }
   }
 }
@@ -231,6 +246,9 @@ class _NotificationCard extends StatelessWidget {
 
   IconData _iconForEvent(String? eventKey) {
     switch (eventKey) {
+      case 'bid.received':
+        return Icons.local_offer_outlined;
+      case 'bid.accepted':
       case 'booking.assigned':
         return Icons.work_outline_rounded;
       case 'booking.status.en_route':

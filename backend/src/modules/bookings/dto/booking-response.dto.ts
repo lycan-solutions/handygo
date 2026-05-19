@@ -48,8 +48,12 @@ export class BookingAttachmentDto {
   id: string;
   type: AttachmentType;
   url: string;
+  storageKey: string | null;
   fileName: string | null;
   mimeType: string | null;
+  sizeBytes: number | null;
+  durationSeconds: number | null;
+  thumbnailUrl: string | null;
   createdAt: string;
 }
 

@@ -75,11 +75,28 @@ export class AuthController {
     return this.authService.getAvatarUrl(user.id);
   }
 
-  /** PATCH /auth/avatar — upload a new profile picture (multipart) */
+  /** PATCH /auth/avatar — upload a new profile picture (multipart, max 5 MB) */
   @Patch('avatar')
   @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', {
+      limits: { fileSize: 5 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        const allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/heic'];
+        if (allowed.includes(file.mimetype)) {
+          cb(null, true);
+        } else {
+          cb(
+            new BadRequestException(
+              `Unsupported avatar type: ${file.mimetype}. Allowed: jpeg, png, webp, heic.`,
+            ),
+            false,
+          );
+        }
+      },
+    }),
+  )
   uploadAvatar(
     @CurrentUser() user: { id: string },
     @UploadedFile() file: Express.Multer.File,

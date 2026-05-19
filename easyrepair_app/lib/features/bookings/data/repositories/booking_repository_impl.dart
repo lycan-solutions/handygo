@@ -101,10 +101,16 @@ class BookingRepositoryImpl implements BookingRepository {
   Future<Either<Failure, BookingAttachmentEntity>> uploadAttachment(
     String bookingId,
     File file,
-    String mimeType,
-  ) async {
+    String mimeType, {
+    double? durationSeconds,
+  }) async {
     try {
-      final model = await _dataSource.uploadAttachment(bookingId, file, mimeType);
+      final model = await _dataSource.uploadAttachment(
+        bookingId,
+        file,
+        mimeType,
+        durationSeconds: durationSeconds,
+      );
       return Right(model.toEntity());
     } on Failure catch (f) {
       return Left(f);

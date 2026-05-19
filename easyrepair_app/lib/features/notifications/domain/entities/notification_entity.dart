@@ -5,6 +5,8 @@ class NotificationEntity {
   final bool isRead;
   final DateTime? readAt;
   final String? eventKey;
+  final String? entityType;
+  final String? entityId;
   final String? bookingId;
   final String? route;
   final Map<String, dynamic>? payload;
@@ -17,6 +19,8 @@ class NotificationEntity {
     required this.isRead,
     this.readAt,
     this.eventKey,
+    this.entityType,
+    this.entityId,
     this.bookingId,
     this.route,
     this.payload,

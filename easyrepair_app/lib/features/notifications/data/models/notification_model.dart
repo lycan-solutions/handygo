@@ -7,6 +7,8 @@ class NotificationModel {
   final bool isRead;
   final DateTime? readAt;
   final String? eventKey;
+  final String? entityType;
+  final String? entityId;
   final String? bookingId;
   final String? route;
   final Map<String, dynamic>? payload;
@@ -19,6 +21,8 @@ class NotificationModel {
     required this.isRead,
     this.readAt,
     this.eventKey,
+    this.entityType,
+    this.entityId,
     this.bookingId,
     this.route,
     this.payload,
@@ -35,6 +39,8 @@ class NotificationModel {
           ? DateTime.tryParse(json['readAt'] as String)
           : null,
       eventKey: json['eventKey'] as String?,
+      entityType: json['entityType'] as String?,
+      entityId: json['entityId'] as String?,
       bookingId: json['bookingId'] as String?,
       route: json['route'] as String?,
       payload: json['payload'] as Map<String, dynamic>?,
@@ -50,6 +56,8 @@ class NotificationModel {
         isRead: isRead,
         readAt: readAt,
         eventKey: eventKey,
+        entityType: entityType,
+        entityId: entityId,
         bookingId: bookingId,
         route: route,
         payload: payload,

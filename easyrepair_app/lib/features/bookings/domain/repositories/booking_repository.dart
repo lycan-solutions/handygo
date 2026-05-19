@@ -35,8 +35,9 @@ abstract class BookingRepository {
   Future<Either<Failure, BookingAttachmentEntity>> uploadAttachment(
     String bookingId,
     File file,
-    String mimeType,
-  );
+    String mimeType, {
+    double? durationSeconds,
+  });
 
   /// Delete an attachment from a PENDING booking.
   Future<Either<Failure, void>> deleteAttachment(

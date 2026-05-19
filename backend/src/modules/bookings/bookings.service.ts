@@ -342,6 +342,7 @@ export class BookingsService {
     userId: string,
     bookingId: string,
     file: Express.Multer.File,
+    durationSeconds?: number,
   ): Promise<BookingAttachmentDto> {
     const profile =
       await this.bookingsRepository.findClientProfileByUserId(userId);
@@ -364,27 +365,35 @@ export class BookingsService {
     }
 
     const type = this._resolveAttachmentType(file.mimetype);
-    const url = await this.storageService.upload(
+    const folder = this._attachmentFolder(bookingId, type);
+    const uploaded = await this.storageService.uploadFile(
       file.buffer,
       file.originalname,
       file.mimetype,
-      'booking-attachments',
+      folder,
     );
 
     const attachment = await this.bookingsRepository.createAttachment({
       bookingId,
       type,
-      url,
-      fileName: file.originalname,
-      mimeType: file.mimetype,
+      url: uploaded.url,
+      storageKey: uploaded.key,
+      fileName: uploaded.fileName,
+      mimeType: uploaded.mimeType,
+      sizeBytes: uploaded.sizeBytes,
+      durationSeconds: Number.isFinite(durationSeconds) ? durationSeconds : undefined,
     });
 
     return {
       id: attachment.id,
       type: attachment.type,
       url: attachment.url,
+      storageKey: attachment.storageKey ?? null,
       fileName: attachment.fileName ?? null,
       mimeType: attachment.mimeType ?? null,
+      sizeBytes: attachment.sizeBytes ?? null,
+      durationSeconds: attachment.durationSeconds ?? null,
+      thumbnailUrl: attachment.thumbnailUrl ?? null,
       createdAt: attachment.createdAt.toISOString(),
     };
   }
@@ -567,6 +576,16 @@ export class BookingsService {
     );
   }
 
+  private _attachmentFolder(bookingId: string, type: AttachmentType): string {
+    const sub =
+      type === AttachmentType.IMAGE
+        ? 'images'
+        : type === AttachmentType.VIDEO
+          ? 'videos'
+          : 'voice';
+    return `uploads/bookings/${bookingId}/${sub}`;
+  }
+
   private _toDto(booking: BookingWithRelations): BookingResponseDto {
     const wp = booking.workerProfile;
     const worker: WorkerSummaryDto | null = wp
@@ -601,8 +620,12 @@ export class BookingsService {
         id: a.id,
         type: a.type,
         url: a.url,
+        storageKey: a.storageKey ?? null,
         fileName: a.fileName ?? null,
         mimeType: a.mimeType ?? null,
+        sizeBytes: a.sizeBytes ?? null,
+        durationSeconds: a.durationSeconds ?? null,
+        thumbnailUrl: a.thumbnailUrl ?? null,
         createdAt: a.createdAt.toISOString(),
       }),
     );

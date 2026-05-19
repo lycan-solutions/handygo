@@ -69,15 +69,25 @@ export class NotificationsService {
     }
 
     // FCM push — fire and forget, never awaited by caller
-    void this._sendPush(userId, title, body, {
+    const resolvedEntityType = entityType ?? (bookingId ? 'booking' : '');
+    const resolvedEntityId = entityId ?? bookingId ?? '';
+    const fcmData: Record<string, string> = {
       eventKey: eventKey ?? '',
-      entityType: entityType ?? (bookingId ? 'booking' : ''),
-      entityId: entityId ?? bookingId ?? '',
-      bookingId: bookingId ?? '',
+      entityType: resolvedEntityType,
+      entityId: resolvedEntityId,
       route: route ?? '',
       actorUserId: actorUserId ?? '',
       actorRole: actorRole ?? '',
-    });
+    };
+    // Include role-aware navigation keys so Flutter can route without parsing entityType.
+    if (resolvedEntityType === 'conversation' && resolvedEntityId) {
+      fcmData.conversationId = resolvedEntityId;
+    } else if (resolvedEntityType === 'booking' && resolvedEntityId) {
+      fcmData.bookingId = resolvedEntityId;
+    } else if (bookingId) {
+      fcmData.bookingId = bookingId;
+    }
+    void this._sendPush(userId, title, body, fcmData);
   }
 
   private async _sendPush(

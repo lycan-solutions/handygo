@@ -75,8 +75,12 @@ export const BOOKING_INCLUDE = {
       id: true,
       type: true,
       url: true,
+      storageKey: true,
       fileName: true,
       mimeType: true,
+      sizeBytes: true,
+      durationSeconds: true,
+      thumbnailUrl: true,
       createdAt: true,
     },
     orderBy: { createdAt: 'asc' as const },
@@ -249,8 +253,12 @@ export class BookingsRepository {
     bookingId: string;
     type: AttachmentType;
     url: string;
+    storageKey?: string;
     fileName?: string;
     mimeType?: string;
+    sizeBytes?: number;
+    durationSeconds?: number;
+    thumbnailUrl?: string;
   }) {
     return this.prisma.bookingAttachment.create({ data });
   }

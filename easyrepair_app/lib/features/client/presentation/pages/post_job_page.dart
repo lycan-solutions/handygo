@@ -753,7 +753,12 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
     if (!file.existsSync()) return;
     final result = await ref
         .read(bookingRepositoryProvider)
-        .uploadAttachment(bookingId, file, 'audio/x-m4a');
+        .uploadAttachment(
+          bookingId,
+          file,
+          'audio/x-m4a',
+          durationSeconds: _recordingSeconds > 0 ? _recordingSeconds.toDouble() : null,
+        );
     result.fold((failure) => throw failure, (_) {});
   }
 

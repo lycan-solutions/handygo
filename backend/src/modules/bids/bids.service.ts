@@ -83,6 +83,28 @@ export class BidsService {
     });
 
     this.logger.log(`[createBid] created bidId=${bid.id}`);
+
+    // Notify the booking client about the new bid.
+    // booking.clientProfile is already loaded by findBookingById.
+    const clientUserId = booking.clientProfile?.userId;
+    if (clientUserId) {
+      const workerName = [workerProfile.firstName, workerProfile.lastName]
+        .filter(Boolean)
+        .join(' ') || 'A worker';
+      void this.notificationsService.notify({
+        userId: clientUserId,
+        eventKey: 'bid.received',
+        title: 'New offer received',
+        body: `${workerName} sent you an offer for PKR ${amount}`,
+        bookingId,
+        route: `/client/booking/${bookingId}`,
+        actorUserId: userId,
+        actorRole: 'WORKER',
+        entityType: 'booking',
+        entityId: bookingId,
+      });
+    }
+
     return bid;
   }
 
@@ -334,11 +356,15 @@ export class BidsService {
     this.notificationsService
       .notify({
         userId: bid.workerProfile.userId,
-        eventKey: 'BID_ACCEPTED',
+        eventKey: 'bid.accepted',
         title: 'Bid Accepted!',
         body: 'Your bid has been accepted. Head to the job details.',
         bookingId: bid.booking.id,
-        route: `/worker/jobs/${bid.booking.id}`,
+        route: `/worker/job/${bid.booking.id}`,
+        actorUserId: userId,
+        actorRole: 'CLIENT',
+        entityType: 'booking',
+        entityId: bid.booking.id,
       })
       .catch((err) => this.logger.warn(`[acceptBid] notify failed: ${err.message}`));
 

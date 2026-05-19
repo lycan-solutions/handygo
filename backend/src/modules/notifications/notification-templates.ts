@@ -1,5 +1,7 @@
 export const NOTIFICATION_KEYS = {
   BOOKING_ASSIGNED: 'booking.assigned',
+  BID_RECEIVED: 'bid.received',
+  BID_ACCEPTED: 'bid.accepted',
   BOOKING_STATUS_EN_ROUTE: 'booking.status.en_route',
   BOOKING_STATUS_IN_PROGRESS: 'booking.status.in_progress',
   BOOKING_COMPLETED: 'booking.completed',
@@ -21,6 +23,18 @@ export function getNotificationTemplate(
       return {
         title: 'New Job Assigned',
         body: "You've been assigned to a new job. Tap to view details.",
+      };
+    case NOTIFICATION_KEYS.BID_RECEIVED:
+      return {
+        title: 'New offer received',
+        body: params?.workerName && params?.amount
+          ? `${params.workerName} sent you an offer for PKR ${params.amount}`
+          : 'A worker sent you an offer. Tap to view.',
+      };
+    case NOTIFICATION_KEYS.BID_ACCEPTED:
+      return {
+        title: 'Bid Accepted!',
+        body: 'Your bid has been accepted. Head to the job details.',
       };
     case NOTIFICATION_KEYS.BOOKING_STATUS_EN_ROUTE:
       return {

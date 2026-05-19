@@ -152,16 +152,24 @@ class BookingAttachmentEntity {
   final String id;
   final AttachmentType type;
   final String url;
+  final String? storageKey;
   final String? fileName;
   final String? mimeType;
+  final int? sizeBytes;
+  final double? durationSeconds;
+  final String? thumbnailUrl;
   final DateTime createdAt;
 
   const BookingAttachmentEntity({
     required this.id,
     required this.type,
     required this.url,
+    this.storageKey,
     this.fileName,
     this.mimeType,
+    this.sizeBytes,
+    this.durationSeconds,
+    this.thumbnailUrl,
     required this.createdAt,
   });
 }

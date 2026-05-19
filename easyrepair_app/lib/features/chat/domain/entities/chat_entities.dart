@@ -58,7 +58,12 @@ class MessageEntity {
   final ChatMessageType type;
   final String? text;
   final String? mediaUrl;
+  final String? storageKey;
   final String? thumbnailUrl;
+  final String? mimeType;
+  final String? fileName;
+  final int? sizeBytes;
+  final double? durationSeconds;
   final double? latitude;
   final double? longitude;
   final String? bookingId;
@@ -77,7 +82,12 @@ class MessageEntity {
     required this.type,
     this.text,
     this.mediaUrl,
+    this.storageKey,
     this.thumbnailUrl,
+    this.mimeType,
+    this.fileName,
+    this.sizeBytes,
+    this.durationSeconds,
     this.latitude,
     this.longitude,
     this.bookingId,
@@ -100,7 +110,12 @@ class MessageEntity {
         type: type,
         text: text,
         mediaUrl: mediaUrl,
+        storageKey: storageKey,
         thumbnailUrl: thumbnailUrl,
+        mimeType: mimeType,
+        fileName: fileName,
+        sizeBytes: sizeBytes,
+        durationSeconds: durationSeconds,
         latitude: latitude,
         longitude: longitude,
         bookingId: bookingId,
@@ -121,7 +136,12 @@ class MessageEntity {
         type: type,
         text: newText,
         mediaUrl: mediaUrl,
+        storageKey: storageKey,
         thumbnailUrl: thumbnailUrl,
+        mimeType: mimeType,
+        fileName: fileName,
+        sizeBytes: sizeBytes,
+        durationSeconds: durationSeconds,
         latitude: latitude,
         longitude: longitude,
         bookingId: bookingId,
@@ -142,7 +162,12 @@ class MessageEntity {
         type: type,
         text: text,
         mediaUrl: mediaUrl,
+        storageKey: storageKey,
         thumbnailUrl: thumbnailUrl,
+        mimeType: mimeType,
+        fileName: fileName,
+        sizeBytes: sizeBytes,
+        durationSeconds: durationSeconds,
         latitude: latitude,
         longitude: longitude,
         bookingId: bookingId,

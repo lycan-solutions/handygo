@@ -193,6 +193,7 @@ export class ChatController {
       id,
       file.buffer,
       file.originalname,
+      file.mimetype,
     );
     void this.chatGateway.broadcastNewMessage(id, message);
     return message;

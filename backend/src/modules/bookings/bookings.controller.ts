@@ -182,9 +182,13 @@ export class BookingsController {
     @CurrentUser() user: { id: string },
     @Param('id') bookingId: string,
     @UploadedFile() file: Express.Multer.File,
+    @Body('durationSeconds') durationSecondsRaw?: string,
   ) {
     if (!file) throw new BadRequestException('No file provided.');
-    return this.bookingsService.uploadAttachment(user.id, bookingId, file);
+    const durationSeconds = durationSecondsRaw != null
+      ? parseFloat(durationSecondsRaw)
+      : undefined;
+    return this.bookingsService.uploadAttachment(user.id, bookingId, file, durationSeconds);
   }
 
   /**

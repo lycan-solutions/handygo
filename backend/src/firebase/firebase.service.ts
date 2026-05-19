@@ -48,6 +48,12 @@ export class FirebaseService implements OnModuleInit {
       return;
     }
 
+    const isChat =
+      data?.conversationId != null ||
+      data?.entityType === 'conversation' ||
+      (data?.eventKey ?? '').startsWith('chat');
+    const androidChannelId = isChat ? 'easyrepair_chat' : 'easyrepair_bookings';
+
     await this.messaging.send({
       token: fcmToken,
       notification: { title, body },
@@ -56,7 +62,7 @@ export class FirebaseService implements OnModuleInit {
         priority: 'high',
         notification: {
           sound: 'default',
-          channelId: 'easyrepair_bookings',
+          channelId: androidChannelId,
         },
       },
       apns: {

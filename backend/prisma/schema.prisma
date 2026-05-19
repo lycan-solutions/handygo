@@ -118,14 +118,15 @@ model RefreshToken {
 }
 
 model ClientProfile {
-  id        String   @id @default(uuid())
-  userId    String   @unique
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  firstName String
-  lastName  String
-  avatarUrl String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  firstName       String
+  lastName        String
+  avatarUrl       String?
+  avatarStorageKey String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   bookings  Booking[]
   addresses ClientAddress[]
@@ -157,6 +158,7 @@ model WorkerProfile {
   firstName          String
   lastName           String
   avatarUrl          String?
+  avatarStorageKey   String?
   bio                String?
   status             WorkerStatus       @default(INACTIVE)
   verificationStatus VerificationStatus @default(PENDING)
@@ -200,6 +202,10 @@ model WorkerDocument {
   workerProfile   WorkerProfile @relation(fields: [workerProfileId], references: [id], onDelete: Cascade)
   type            String
   fileUrl         String
+  storageKey      String?
+  fileName        String?
+  mimeType        String?
+  sizeBytes       Int?
   verifiedAt      DateTime?
   createdAt       DateTime      @default(now())
 
@@ -283,14 +289,18 @@ model BookingStatusHistory {
 }
 
 model BookingAttachment {
-  id        String         @id @default(uuid())
-  bookingId String
-  booking   Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
-  type      AttachmentType
-  url       String
-  fileName  String?
-  mimeType  String?
-  createdAt DateTime       @default(now())
+  id              String         @id @default(uuid())
+  bookingId       String
+  booking         Booking        @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  type            AttachmentType
+  url             String
+  storageKey      String?
+  fileName        String?
+  mimeType        String?
+  sizeBytes       Int?
+  durationSeconds Float?
+  thumbnailUrl    String?
+  createdAt       DateTime       @default(now())
 
   @@index([bookingId])
   @@map("booking_attachments")
@@ -339,7 +349,12 @@ model Message {
   type             MessageType  @default(TEXT)
   text             String?
   mediaUrl         String?
+  storageKey       String?
   thumbnailUrl     String?
+  mimeType         String?
+  fileName         String?
+  sizeBytes        Int?
+  durationSeconds  Float?
   latitude         Float?
   longitude        Float?
   /// Optional reference to a booking — for context only, not a hard FK

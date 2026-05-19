@@ -102,6 +102,20 @@ export class AuthRepository {
     });
   }
 
+  async updateClientAvatar(userId: string, avatarUrl: string, avatarStorageKey: string): Promise<void> {
+    await this.prisma.clientProfile.update({
+      where: { userId },
+      data: { avatarUrl, avatarStorageKey },
+    });
+  }
+
+  async updateWorkerAvatar(userId: string, avatarUrl: string, avatarStorageKey: string): Promise<void> {
+    await this.prisma.workerProfile.update({
+      where: { userId },
+      data: { avatarUrl, avatarStorageKey },
+    });
+  }
+
   async getAvatarUrls(userId: string, role: Role): Promise<{ avatarUrl: string | null }> {
     if (role === Role.CLIENT) {
       const p = await this.prisma.clientProfile.findUnique({

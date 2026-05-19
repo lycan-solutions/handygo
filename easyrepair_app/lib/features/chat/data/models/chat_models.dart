@@ -119,7 +119,12 @@ class MessageModel {
   final ChatMessageType type;
   final String? text;
   final String? mediaUrl;
+  final String? storageKey;
   final String? thumbnailUrl;
+  final String? mimeType;
+  final String? fileName;
+  final int? sizeBytes;
+  final double? durationSeconds;
   final double? latitude;
   final double? longitude;
   final String? bookingId;
@@ -138,7 +143,12 @@ class MessageModel {
     required this.type,
     this.text,
     this.mediaUrl,
+    this.storageKey,
     this.thumbnailUrl,
+    this.mimeType,
+    this.fileName,
+    this.sizeBytes,
+    this.durationSeconds,
     this.latitude,
     this.longitude,
     this.bookingId,
@@ -159,7 +169,12 @@ class MessageModel {
       type: _parseMessageType(json['type'] as String? ?? 'TEXT'),
       text: json['text'] as String?,
       mediaUrl: json['mediaUrl'] as String?,
+      storageKey: json['storageKey'] as String?,
       thumbnailUrl: json['thumbnailUrl'] as String?,
+      mimeType: json['mimeType'] as String?,
+      fileName: json['fileName'] as String?,
+      sizeBytes: (json['sizeBytes'] as num?)?.toInt(),
+      durationSeconds: (json['durationSeconds'] as num?)?.toDouble(),
       latitude: (json['latitude'] as num?)?.toDouble(),
       longitude: (json['longitude'] as num?)?.toDouble(),
       bookingId: json['bookingId'] as String?,
@@ -181,7 +196,12 @@ class MessageModel {
       type: type,
       text: text,
       mediaUrl: mediaUrl,
+      storageKey: storageKey,
       thumbnailUrl: thumbnailUrl,
+      mimeType: mimeType,
+      fileName: fileName,
+      sizeBytes: sizeBytes,
+      durationSeconds: durationSeconds,
       latitude: latitude,
       longitude: longitude,
       bookingId: bookingId,

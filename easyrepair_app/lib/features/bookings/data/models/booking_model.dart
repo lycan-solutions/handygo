@@ -5,16 +5,24 @@ class BookingAttachmentModel {
   final String id;
   final String type; // 'IMAGE' | 'VIDEO' | 'AUDIO'
   final String url;
+  final String? storageKey;
   final String? fileName;
   final String? mimeType;
+  final int? sizeBytes;
+  final double? durationSeconds;
+  final String? thumbnailUrl;
   final DateTime createdAt;
 
   const BookingAttachmentModel({
     required this.id,
     required this.type,
     required this.url,
+    this.storageKey,
     this.fileName,
     this.mimeType,
+    this.sizeBytes,
+    this.durationSeconds,
+    this.thumbnailUrl,
     required this.createdAt,
   });
 
@@ -23,8 +31,12 @@ class BookingAttachmentModel {
       id: json['id'] as String,
       type: json['type'] as String? ?? 'IMAGE',
       url: json['url'] as String,
+      storageKey: json['storageKey'] as String?,
       fileName: json['fileName'] as String?,
       mimeType: json['mimeType'] as String?,
+      sizeBytes: (json['sizeBytes'] as num?)?.toInt(),
+      durationSeconds: (json['durationSeconds'] as num?)?.toDouble(),
+      thumbnailUrl: json['thumbnailUrl'] as String?,
       createdAt: DateTime.tryParse(json['createdAt'] as String? ?? '') ?? DateTime.now(),
     );
   }
@@ -33,8 +45,12 @@ class BookingAttachmentModel {
         id: id,
         type: AttachmentTypeX.fromRaw(type),
         url: _resolveUrl(url),
+        storageKey: storageKey,
         fileName: fileName,
         mimeType: mimeType,
+        sizeBytes: sizeBytes,
+        durationSeconds: durationSeconds,
+        thumbnailUrl: thumbnailUrl,
         createdAt: createdAt,
       );
 

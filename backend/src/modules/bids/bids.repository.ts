@@ -33,7 +33,15 @@ export class BidsRepository {
   async findBookingById(bookingId: string) {
     return this.prisma.booking.findUnique({
       where: { id: bookingId },
-      select: { id: true, status: true, clientProfileId: true, categoryId: true, latitude: true, longitude: true },
+      select: {
+        id: true,
+        status: true,
+        clientProfileId: true,
+        categoryId: true,
+        latitude: true,
+        longitude: true,
+        clientProfile: { select: { userId: true } },
+      },
     });
   }
 
@@ -42,6 +50,8 @@ export class BidsRepository {
       where: { userId },
       select: {
         id: true,
+        firstName: true,
+        lastName: true,
         status: true,
         verificationStatus: true,
         availabilityStatus: true,

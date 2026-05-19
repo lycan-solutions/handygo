@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/notifications/local_notification_service.dart';
+import '../core/notifications/notification_navigator.dart';
 import '../core/router/app_router.dart';
 import '../core/services/chat_socket_service.dart';
 import '../core/storage/secure_storage_service.dart';
@@ -145,34 +146,8 @@ class _EasyRepairAppState extends ConsumerState<EasyRepairApp>
     Map<String, dynamic> data, {
     required bool isWorker,
   }) {
-    final bookingId = data['bookingId'] as String?;
-    final conversationId = data['conversationId'] as String?;
-    final route = data['route'] as String?;
-
     final router = ref.read(routerProvider);
-
-    // bookingId takes priority.
-    if (bookingId != null && bookingId.isNotEmpty) {
-      final destination = isWorker
-          ? '/worker/job/$bookingId'
-          : '/client/booking/$bookingId';
-      router.go(destination);
-      return;
-    }
-
-    // Chat message tap — navigate to the conversation.
-    if (conversationId != null && conversationId.isNotEmpty) {
-      final destination = isWorker
-          ? '/worker/chat/$conversationId'
-          : '/client/chat/$conversationId';
-      router.go(destination);
-      return;
-    }
-
-    // Fallback: use explicit route from payload.
-    if (route != null && route.isNotEmpty) {
-      router.go(route);
-    }
+    NotificationNavigator.navigateByRouter(router, data, isWorker: isWorker);
   }
 
   // ── Token management ─────────────────────────────────────────────────────

@@ -171,6 +171,10 @@ export class ChatService {
       conversation.clientUserId === userId
         ? conversation.workerUserId
         : conversation.clientUserId;
+    const receiverIsWorker = conversation.workerUserId === receiverId;
+    const chatRoute = receiverIsWorker
+      ? `/worker/chat/${conversationId}`
+      : `/client/chat/${conversationId}`;
     const senderName = this._senderName(conversation, userId, role);
     void this.notificationsService.notify({
       userId: receiverId,
@@ -179,7 +183,7 @@ export class ChatService {
       body: text.length > 100 ? text.slice(0, 100) + '…' : text,
       entityType: 'conversation',
       entityId: conversationId,
-      route: `/chat/${conversationId}`,
+      route: chatRoute,
     });
 
     return this._toMessageDto(message);
@@ -201,8 +205,10 @@ export class ChatService {
     this._assertParticipant(conversation, userId);
 
     const isVideo = mimeType.startsWith('video/');
-    const folder = isVideo ? 'chat-videos' : 'chat-images';
-    const mediaUrl = await this.storageService.upload(
+    const folder = isVideo
+      ? `uploads/chat/${conversationId}/videos`
+      : `uploads/chat/${conversationId}/images`;
+    const uploaded = await this.storageService.uploadFile(
       buffer,
       originalName,
       mimeType,
@@ -213,13 +219,18 @@ export class ChatService {
       senderUserId: userId,
       senderRole: role,
       type: isVideo ? MessageType.VIDEO : MessageType.IMAGE,
-      mediaUrl,
+      mediaUrl: uploaded.url,
+      storageKey: uploaded.key,
+      mimeType: uploaded.mimeType,
+      fileName: uploaded.fileName,
+      sizeBytes: uploaded.sizeBytes,
     });
 
     const receiverId =
       conversation.clientUserId === userId
         ? conversation.workerUserId
         : conversation.clientUserId;
+    const receiverIsWorker = conversation.workerUserId === receiverId;
     void this.notificationsService.notify({
       userId: receiverId,
       eventKey: 'chat.message',
@@ -227,7 +238,9 @@ export class ChatService {
       body: isVideo ? 'Sent a video' : 'Sent an image',
       entityType: 'conversation',
       entityId: conversationId,
-      route: `/chat/${conversationId}`,
+      route: receiverIsWorker
+        ? `/worker/chat/${conversationId}`
+        : `/client/chat/${conversationId}`,
     });
 
     return this._toMessageDto(message);
@@ -239,29 +252,36 @@ export class ChatService {
     conversationId: string,
     buffer: Buffer,
     originalName: string,
+    fileMimeType?: string,
   ): Promise<MessageResponseDto> {
     const conversation =
       await this.chatRepository.findConversationById(conversationId);
     if (!conversation) throw new NotFoundException('Conversation not found');
     this._assertParticipant(conversation, userId);
 
-    const mediaUrl = await this.storageService.upload(
+    const voiceMime = fileMimeType || (originalName.endsWith('.m4a') ? 'audio/x-m4a' : 'audio/mp4');
+    const uploaded = await this.storageService.uploadFile(
       buffer,
       originalName,
-      'audio/m4a',
-      'chat-voice',
+      voiceMime,
+      `uploads/chat/${conversationId}/voice`,
     );
     const message = await this.chatRepository.createVoiceMessage({
       conversationId,
       senderUserId: userId,
       senderRole: role,
-      mediaUrl,
+      mediaUrl: uploaded.url,
+      storageKey: uploaded.key,
+      mimeType: uploaded.mimeType,
+      fileName: uploaded.fileName,
+      sizeBytes: uploaded.sizeBytes,
     });
 
     const receiverId =
       conversation.clientUserId === userId
         ? conversation.workerUserId
         : conversation.clientUserId;
+    const receiverIsWorker = conversation.workerUserId === receiverId;
     void this.notificationsService.notify({
       userId: receiverId,
       eventKey: 'chat.message',
@@ -269,7 +289,9 @@ export class ChatService {
       body: 'Sent a voice note',
       entityType: 'conversation',
       entityId: conversationId,
-      route: `/chat/${conversationId}`,
+      route: receiverIsWorker
+        ? `/worker/chat/${conversationId}`
+        : `/client/chat/${conversationId}`,
     });
 
     return this._toMessageDto(message);
@@ -299,6 +321,7 @@ export class ChatService {
       conversation.clientUserId === userId
         ? conversation.workerUserId
         : conversation.clientUserId;
+    const receiverIsWorker = conversation.workerUserId === receiverId;
     void this.notificationsService.notify({
       userId: receiverId,
       eventKey: 'chat.message',
@@ -306,7 +329,9 @@ export class ChatService {
       body: 'Shared a location',
       entityType: 'conversation',
       entityId: conversationId,
-      route: `/chat/${conversationId}`,
+      route: receiverIsWorker
+        ? `/worker/chat/${conversationId}`
+        : `/client/chat/${conversationId}`,
     });
 
     return this._toMessageDto(message);
@@ -451,7 +476,12 @@ export class ChatService {
     type: import('@prisma/client').MessageType;
     text: string | null;
     mediaUrl: string | null;
+    storageKey?: string | null;
     thumbnailUrl: string | null;
+    mimeType?: string | null;
+    fileName?: string | null;
+    sizeBytes?: number | null;
+    durationSeconds?: number | null;
     latitude: number | null;
     longitude: number | null;
     bookingId: string | null;
@@ -470,7 +500,12 @@ export class ChatService {
       type: m.type,
       text: m.text,
       mediaUrl: m.mediaUrl,
+      storageKey: m.storageKey ?? null,
       thumbnailUrl: m.thumbnailUrl,
+      mimeType: m.mimeType ?? null,
+      fileName: m.fileName ?? null,
+      sizeBytes: m.sizeBytes ?? null,
+      durationSeconds: m.durationSeconds ?? null,
       latitude: m.latitude,
       longitude: m.longitude,
       bookingId: m.bookingId,

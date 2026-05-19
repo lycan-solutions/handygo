@@ -37,6 +37,7 @@ export class StorageService {
   /**
    * Upload a file buffer to S3 under the given folder prefix.
    * Returns the public URL of the uploaded object.
+   * Kept for backward compatibility — prefer uploadFile() for new code.
    */
   async upload(
     buffer: Buffer,
@@ -44,8 +45,35 @@ export class StorageService {
     mimeType: string,
     folder = 'booking-attachments',
   ): Promise<string> {
-    const ext = extname(originalName) || '';
-    const key = `${folder}/${randomUUID()}${ext}`;
+    const { url } = await this.uploadFile(buffer, originalName, mimeType, folder);
+    return url;
+  }
+
+  /**
+   * Upload a file buffer using an exact key prefix (folder path).
+   * The key is: {keyPrefix}/{uuid}{ext}
+   *
+   * Use this for new upload paths that must follow the scoped folder structure:
+   *   uploads/bookings/{bookingId}/images/
+   *   uploads/chat/{conversationId}/voice/
+   *   uploads/avatars/{userId}/
+   *
+   * Returns full metadata needed for DB persistence.
+   */
+  async uploadFile(
+    buffer: Buffer,
+    originalName: string,
+    mimeType: string,
+    keyPrefix: string,
+  ): Promise<{
+    url: string;
+    key: string;
+    sizeBytes: number;
+    mimeType: string;
+    fileName: string;
+  }> {
+    const ext = this._extFromMime(originalName, mimeType);
+    const key = `${keyPrefix}/${randomUUID()}${ext}`;
 
     await this.s3.send(
       new PutObjectCommand({
@@ -58,7 +86,37 @@ export class StorageService {
 
     const url = `${this.publicUrl}/${key}`;
     this.logger.log(`[StorageService] uploaded: ${url}`);
-    return url;
+    return {
+      url,
+      key,
+      sizeBytes: buffer.length,
+      mimeType,
+      fileName: originalName,
+    };
+  }
+
+  /** Derive file extension from original filename or MIME type. */
+  private _extFromMime(originalName: string, mimeType: string): string {
+    const fromName = extname(originalName);
+    if (fromName) return fromName;
+    // Fallback: derive from MIME
+    const mimeMap: Record<string, string> = {
+      'image/jpeg': '.jpg',
+      'image/png': '.png',
+      'image/webp': '.webp',
+      'image/heic': '.heic',
+      'video/mp4': '.mp4',
+      'video/quicktime': '.mov',
+      'video/3gpp': '.3gp',
+      'audio/mpeg': '.mp3',
+      'audio/mp4': '.mp4',
+      'audio/aac': '.aac',
+      'audio/x-m4a': '.m4a',
+      'audio/m4a': '.m4a',
+      'audio/ogg': '.ogg',
+      'audio/wav': '.wav',
+    };
+    return mimeMap[mimeType] ?? '';
   }
 
   /**

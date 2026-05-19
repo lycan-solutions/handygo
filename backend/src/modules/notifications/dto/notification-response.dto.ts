@@ -5,6 +5,8 @@ export class NotificationResponseDto {
   isRead!: boolean;
   readAt!: string | null;
   eventKey!: string | null;
+  entityType!: string | null;
+  entityId!: string | null;
   bookingId!: string | null;
   route!: string | null;
   payload!: Record<string, unknown> | null;

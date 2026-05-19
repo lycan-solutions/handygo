@@ -20,8 +20,9 @@ abstract class BookingRemoteDataSource {
   Future<BookingAttachmentModel> uploadAttachment(
     String bookingId,
     File file,
-    String mimeType,
-  );
+    String mimeType, {
+    double? durationSeconds,
+  });
   Future<void> deleteAttachment(String bookingId, String attachmentId);
   Future<NearbyWorkersResultModel> getNearbyWorkers(
     String bookingId, {
@@ -144,8 +145,9 @@ class BookingRemoteDataSourceImpl implements BookingRemoteDataSource {
   Future<BookingAttachmentModel> uploadAttachment(
     String bookingId,
     File file,
-    String mimeType,
-  ) async {
+    String mimeType, {
+    double? durationSeconds,
+  }) async {
     try {
       final fileName = file.path.split('/').last;
       final formData = FormData.fromMap({
@@ -154,6 +156,7 @@ class BookingRemoteDataSourceImpl implements BookingRemoteDataSource {
           filename: fileName,
           contentType: DioMediaType.parse(mimeType),
         ),
+        if (durationSeconds != null) 'durationSeconds': durationSeconds.toString(),
       });
       final response = await _dio.post(
         '/bookings/$bookingId/attachments',

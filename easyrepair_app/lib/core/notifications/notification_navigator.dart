@@ -6,18 +6,35 @@ import 'package:go_router/go_router.dart';
 class NotificationNavigator {
   NotificationNavigator._();
 
-  /// Resolve a route from a notification data payload.
-  /// Precedence: bookingId (role-aware) > explicit route field.
+  /// Resolve a role-aware route from a notification data payload.
+  ///
+  /// Precedence:
+  ///   1. conversationId (or entityType == 'conversation') → chat route
+  ///   2. bookingId (or entityType == 'booking') → booking/job route
+  ///   3. explicit route field (fallback)
   static String? resolveRoute(
     Map<String, dynamic> data, {
     required bool isWorker,
   }) {
-    final bookingId = data['bookingId'] as String?;
+    // 1. Chat conversation
+    final conversationId = data['conversationId'] as String?
+        ?? (data['entityType'] == 'conversation' ? data['entityId'] as String? : null);
+    if (conversationId != null && conversationId.isNotEmpty) {
+      return isWorker
+          ? '/worker/chat/$conversationId'
+          : '/client/chat/$conversationId';
+    }
+
+    // 2. Booking / job
+    final bookingId = data['bookingId'] as String?
+        ?? (data['entityType'] == 'booking' ? data['entityId'] as String? : null);
     if (bookingId != null && bookingId.isNotEmpty) {
       return isWorker
           ? '/worker/job/$bookingId'
           : '/client/booking/$bookingId';
     }
+
+    // 3. Fallback to explicit route
     final route = data['route'] as String?;
     return (route != null && route.isNotEmpty) ? route : null;
   }

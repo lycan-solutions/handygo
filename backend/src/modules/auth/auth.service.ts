@@ -220,20 +220,19 @@ export class AuthService {
     const user = await this.authRepository.findUserById(userId);
     if (!user) throw new NotFoundException('User not found');
 
-    const avatarUrl = await this.storageService.upload(
+    const uploaded = await this.storageService.uploadFile(
       buffer,
       originalName,
       mimeType,
-      'avatars',
+      `uploads/avatars/${userId}`,
     );
 
     if (user.role === Role.CLIENT) {
-      await this.authRepository.updateClientAvatarUrl(userId, avatarUrl);
+      await this.authRepository.updateClientAvatar(userId, uploaded.url, uploaded.key);
     } else {
-      // Workers: update via workerProfile — re-use the shared method
-      await this.authRepository.updateWorkerAvatarUrl(userId, avatarUrl);
+      await this.authRepository.updateWorkerAvatar(userId, uploaded.url, uploaded.key);
     }
 
-    return { avatarUrl };
+    return { avatarUrl: uploaded.url };
   }
 }

@@ -32,6 +32,8 @@ export class NotificationsController {
       isRead: n.isRead,
       readAt: n.readAt?.toISOString() ?? null,
       eventKey: n.eventKey ?? null,
+      entityType: n.entityType ?? null,
+      entityId: n.entityId ?? null,
       bookingId: n.bookingId ?? null,
       route: n.route ?? null,
       payload: n.payload as Record<string, unknown> | null,

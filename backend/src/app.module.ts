@@ -27,7 +27,7 @@ import { BidsModule } from './modules/bids/bids.module';
     BullModule.forRootAsync({
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        url: config.getOrThrow<string>('redis.url'),
+        url: config.get<string>('redis.url') ?? 'redis://localhost:6379',
       }),
     }),
     PrismaModule,

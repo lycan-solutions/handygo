@@ -1,26 +1,39 @@
-import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import Redis from 'ioredis';
 
 @Injectable()
 export class RedisService implements OnModuleInit, OnModuleDestroy {
-  private client: Redis;
+  private readonly logger = new Logger(RedisService.name);
+  private client: Redis | null = null;
 
   constructor(private readonly configService: ConfigService) {}
 
   onModuleInit() {
-    this.client = new Redis(this.configService.get<string>('redis.url')!);
+    const url = this.configService.get<string>('redis.url');
+    if (!url) {
+      this.logger.warn('REDIS_URL not set — Redis features will be unavailable');
+      return;
+    }
+    try {
+      this.client = new Redis(url, { lazyConnect: false, enableOfflineQueue: false });
+      this.client.on('error', (err) => this.logger.warn(`Redis error: ${err.message}`));
+      this.logger.log('Redis client created');
+    } catch (err: any) {
+      this.logger.warn(`Redis init failed — Redis features will be unavailable: ${err.message}`);
+    }
   }
 
   async onModuleDestroy() {
-    await this.client.quit();
+    if (this.client) await this.client.quit();
   }
 
-  getClient(): Redis {
+  getClient(): Redis | null {
     return this.client;
   }
 
   async set(key: string, value: string, ttlSeconds?: number): Promise<void> {
+    if (!this.client) return;
     if (ttlSeconds) {
       await this.client.set(key, value, 'EX', ttlSeconds);
     } else {
@@ -29,14 +42,17 @@ export class RedisService implements OnModuleInit, OnModuleDestroy {
   }
 
   async get(key: string): Promise<string | null> {
+    if (!this.client) return null;
     return this.client.get(key);
   }
 
   async del(key: string): Promise<void> {
+    if (!this.client) return;
     await this.client.del(key);
   }
 
   async exists(key: string): Promise<boolean> {
+    if (!this.client) return false;
     const count = await this.client.exists(key);
     return count > 0;
   }

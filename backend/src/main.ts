@@ -33,7 +33,7 @@ async function bootstrap() {
   );
 
   await app.listen(port, '0.0.0.0');
-  console.log(`Application running on http://0.0.0.0:${port}/api/v1`);
+  console.log(`Application running on port ${port}`);
 }
 
 bootstrap().catch((err) => {

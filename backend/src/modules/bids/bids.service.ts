@@ -236,45 +236,24 @@ export class BidsService {
     userId: string,
     bookingId: string,
   ): Promise<BidResponseDto[]> {
-    this.logger.log(`[getBidsForBookingAsWorker] userId=${userId} bookingId=${bookingId}`);
-
     const workerProfile = await this.bidsRepository.findWorkerProfileByUserId(userId);
     if (!workerProfile) {
-      this.logger.warn(`[getBidsForBookingAsWorker] no worker profile for userId=${userId}`);
       throw new ForbiddenException('Worker profile not found');
     }
-
-    this.logger.log(`[getBidsForBookingAsWorker] workerProfileId=${workerProfile.id}`);
 
     const booking = await this.bidsRepository.findBookingById(bookingId);
     if (!booking) {
       throw new NotFoundException(`Booking ${bookingId} not found`);
     }
 
-    this.logger.log(
-      `[getBidsForBookingAsWorker] booking.status=${booking.status} booking.categoryId=${booking.categoryId}`,
-    );
-
     // Booking must still be PENDING (unassigned) for a worker to view the feed.
     if (booking.status !== BookingStatus.PENDING) {
-      this.logger.log(
-        `[getBidsForBookingAsWorker] booking not PENDING (${booking.status}) — returning []`,
-      );
       return [];
     }
 
     // Worker must have a skill matching this booking's category.
     const categoryIds = workerProfile.skills.map((s) => s.categoryId);
-    this.logger.log(
-      `[getBidsForBookingAsWorker] worker categoryIds=${JSON.stringify(categoryIds)}`,
-    );
-
-    const categoryMatch = categoryIds.includes(booking.categoryId);
-    this.logger.log(
-      `[getBidsForBookingAsWorker] categoryMatch=${categoryMatch} (booking.categoryId=${booking.categoryId})`,
-    );
-
-    if (!categoryMatch) {
+    if (!categoryIds.includes(booking.categoryId)) {
       throw new ForbiddenException('You are not allowed to view bids for this job');
     }
 
@@ -393,26 +372,13 @@ export class BidsService {
 
     const categoryIds = workerProfile.skills.map((s) => s.categoryId);
 
-    this.logger.log(
-      `[getNewJobsForWorker] workerId=${workerProfile.id} currentlyWorking=${workerProfile.currentlyWorking} skillCategoryIds=${JSON.stringify(categoryIds)}`,
-    );
-
     if (categoryIds.length === 0) {
-      this.logger.log(`[getNewJobsForWorker] workerId=${workerProfile.id} — no skills set, returning []`);
       return [];
     }
-
-    this.logger.log(
-      `[getNewJobsForWorker] querying PENDING bookings for categoryIds=${JSON.stringify(categoryIds)}`,
-    );
 
     const bookings = await this.bidsRepository.findAvailableJobsForWorker(
       workerProfile.id,
       categoryIds,
-    );
-
-    this.logger.log(
-      `[getNewJobsForWorker] workerId=${workerProfile.id} — total PENDING jobs found after status+category filter: ${bookings.length}`,
     );
 
     const result = bookings.map((b) => {
@@ -425,10 +391,6 @@ export class BidsService {
 
       const myBid = b.bids?.[0] ?? null;
       const hasMyBid = myBid !== null;
-
-      this.logger.log(
-        `[getNewJobsForWorker] bookingId=${b.id} status=${b.status} categoryId=${b.categoryId} hasMyBid=${hasMyBid}`,
-      );
 
       return {
         id: b.id,
@@ -452,10 +414,6 @@ export class BidsService {
         workerProfileId: b.workerProfileId ?? null,
       };
     });
-
-    this.logger.log(
-      `[getNewJobsForWorker] workerId=${workerProfile.id} — returning ${result.length} jobs (bidded + non-bidded)`,
-    );
 
     return result;
   }

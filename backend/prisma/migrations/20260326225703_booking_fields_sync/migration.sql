@@ -23,9 +23,6 @@ CREATE INDEX "bookings_categoryId_idx" ON "bookings"("categoryId");
 CREATE INDEX "bookings_status_idx" ON "bookings"("status");
 
 -- CreateIndex
-CREATE INDEX "bookings_urgency_idx" ON "bookings"("urgency");
-
--- CreateIndex
 CREATE INDEX "bookings_scheduledAt_idx" ON "bookings"("scheduledAt");
 
 -- CreateIndex

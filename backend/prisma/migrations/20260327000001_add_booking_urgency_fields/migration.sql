@@ -9,3 +9,6 @@ ALTER TABLE "bookings"
   ADD COLUMN "urgency"  "BookingUrgency" NOT NULL DEFAULT 'NORMAL',
   ADD COLUMN "timeSlot" "TimeSlot",
   ADD COLUMN "title"    TEXT;
+
+-- CreateIndex
+CREATE INDEX IF NOT EXISTS "bookings_urgency_idx" ON "bookings"("urgency");

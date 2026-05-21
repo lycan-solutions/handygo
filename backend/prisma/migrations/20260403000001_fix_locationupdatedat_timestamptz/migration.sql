@@ -9,6 +9,14 @@
 -- USING clause interprets all existing stored values as UTC (which is how
 -- Prisma/Node.js wrote them), preserving their meaning correctly.
 
-ALTER TABLE "worker_profiles"
-  ALTER COLUMN "locationUpdatedAt" TYPE TIMESTAMPTZ(3)
-  USING "locationUpdatedAt" AT TIME ZONE 'UTC';
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1 FROM information_schema.columns
+    WHERE table_name = 'worker_profiles' AND column_name = 'locationUpdatedAt'
+  ) THEN
+    ALTER TABLE "worker_profiles"
+      ALTER COLUMN "locationUpdatedAt" TYPE TIMESTAMPTZ(3)
+      USING "locationUpdatedAt" AT TIME ZONE 'UTC';
+  END IF;
+END $$;

@@ -10,6 +10,7 @@ class ClientChatPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return const ChatListPage(
       detailRoutePrefix: '/client/chat',
+      homeRoute: '/client/home',
       bottomNavigationBar: ClientBottomNavBar(currentIndex: 2),
     );
   }

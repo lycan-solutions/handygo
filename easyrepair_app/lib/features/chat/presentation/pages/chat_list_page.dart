@@ -12,17 +12,26 @@ class ChatListPage extends ConsumerWidget {
   /// Bottom nav bar widget to render below the list.
   final Widget bottomNavigationBar;
 
+  /// Route to navigate to when Android back is pressed on this page.
+  final String homeRoute;
+
   const ChatListPage({
     super.key,
     required this.detailRoutePrefix,
     required this.bottomNavigationBar,
+    required this.homeRoute,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final conversationsAsync = ref.watch(chatConversationsProvider);
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) context.go(homeRoute);
+      },
+      child: Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       extendBody: true,
       body: SafeArea(
@@ -86,6 +95,7 @@ class ChatListPage extends ConsumerWidget {
         ),
       ),
       bottomNavigationBar: bottomNavigationBar,
+    ),
     );
   }
 }

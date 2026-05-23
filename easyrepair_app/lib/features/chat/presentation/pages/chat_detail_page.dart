@@ -626,11 +626,14 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
     );
     final participant = conversation?.otherParticipant;
 
+    // Always go to the explicit back route when one is provided.
+    // Using canPop() as primary check breaks notification-opened pages
+    // (no history stack) — they would exit the app instead of going to chat list.
     void handleBack() {
-      if (context.canPop()) {
-        context.pop();
-      } else if (widget.backRoute != null) {
+      if (widget.backRoute != null) {
         context.go(widget.backRoute!);
+      } else if (context.canPop()) {
+        context.pop();
       }
     }
 

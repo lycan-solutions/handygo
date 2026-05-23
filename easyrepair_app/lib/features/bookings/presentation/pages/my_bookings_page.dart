@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -14,11 +16,32 @@ import '../widgets/booking_skeleton.dart';
 import 'track_worker_page.dart';
 import 'worker_discovery_map_page.dart';
 
-class MyBookingsPage extends ConsumerWidget {
+class MyBookingsPage extends ConsumerStatefulWidget {
   const MyBookingsPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MyBookingsPage> createState() => _MyBookingsPageState();
+}
+
+class _MyBookingsPageState extends ConsumerState<MyBookingsPage> {
+  Timer? _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) ref.read(bookingsNotifierProvider.notifier).refresh();
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final bookingsAsync = ref.watch(bookingsNotifierProvider);
     final filter = ref.watch(bookingFilterProvider);
     final filtered = ref.watch(filteredBookingsProvider);

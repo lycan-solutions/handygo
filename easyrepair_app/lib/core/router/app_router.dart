@@ -22,6 +22,7 @@ import '../../features/worker/presentation/pages/worker_new_jobs_page.dart';
 import '../../features/worker/presentation/pages/worker_reviews_page.dart';
 import '../../features/notifications/presentation/pages/notification_list_page.dart';
 import '../../features/chat/presentation/pages/chat_detail_page.dart';
+import '../../features/bookings/presentation/pages/track_worker_page.dart';
 import '../presentation/pages/splash_page.dart';
 
 final routerProvider = Provider<GoRouter>((ref) {
@@ -89,8 +90,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/client/chat/:id',
-        builder: (_, state) =>
-            ChatDetailPage(conversationId: state.pathParameters['id']!),
+        builder: (_, state) => ChatDetailPage(
+          conversationId: state.pathParameters['id']!,
+          backRoute: '/client/chat',
+        ),
       ),
       GoRoute(
         path: '/client/profile',
@@ -130,8 +133,10 @@ final routerProvider = Provider<GoRouter>((ref) {
       ),
       GoRoute(
         path: '/worker/chat/:id',
-        builder: (_, state) =>
-            ChatDetailPage(conversationId: state.pathParameters['id']!),
+        builder: (_, state) => ChatDetailPage(
+          conversationId: state.pathParameters['id']!,
+          backRoute: '/worker/chat',
+        ),
       ),
       GoRoute(
         path: '/worker/profile',
@@ -157,6 +162,11 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/worker/verification-pending',
         builder: (_, __) => const VerificationPendingPage(),
+      ),
+      GoRoute(
+        path: '/client/track/:id',
+        builder: (_, state) =>
+            TrackWorkerPage(bookingId: state.pathParameters['id']!),
       ),
       GoRoute(
         path: '/notifications',

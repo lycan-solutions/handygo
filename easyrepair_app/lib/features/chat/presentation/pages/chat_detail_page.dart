@@ -10,6 +10,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:record/record.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:video_player/video_player.dart';
 
@@ -20,8 +21,14 @@ import '../providers/chat_providers.dart';
 
 class ChatDetailPage extends ConsumerStatefulWidget {
   final String conversationId;
+  /// Route to navigate to when back is pressed and there's nothing to pop.
+  final String? backRoute;
 
-  const ChatDetailPage({super.key, required this.conversationId});
+  const ChatDetailPage({
+    super.key,
+    required this.conversationId,
+    this.backRoute,
+  });
 
   @override
   ConsumerState<ChatDetailPage> createState() => _ChatDetailPageState();
@@ -619,7 +626,20 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
     );
     final participant = conversation?.otherParticipant;
 
-    return Scaffold(
+    void handleBack() {
+      if (context.canPop()) {
+        context.pop();
+      } else if (widget.backRoute != null) {
+        context.go(widget.backRoute!);
+      }
+    }
+
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) handleBack();
+      },
+      child: Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
         backgroundColor: Colors.white,
@@ -629,7 +649,7 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios_new_rounded,
               color: Color(0xFF1A1A1A), size: 20),
-          onPressed: () => Navigator.of(context).pop(),
+          onPressed: handleBack,
         ),
         title: GestureDetector(
           behavior: HitTestBehavior.opaque,
@@ -795,6 +815,7 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
             ),
         ],
       ),
+    ),
     );
   }
 }

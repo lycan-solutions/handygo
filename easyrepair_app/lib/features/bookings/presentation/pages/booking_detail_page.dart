@@ -244,13 +244,40 @@ class _ShimmerBox extends StatelessWidget {
 
 // ── Main body ─────────────────────────────────────────────────────────────────
 
-class _DetailBody extends ConsumerWidget {
+class _DetailBody extends ConsumerStatefulWidget {
   final BookingEntity booking;
 
   const _DetailBody({required this.booking});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_DetailBody> createState() => _DetailBodyState();
+}
+
+class _DetailBodyState extends ConsumerState<_DetailBody> {
+  final _scrollCtrl = ScrollController();
+  final _reviewKey = GlobalKey();
+
+  @override
+  void dispose() {
+    _scrollCtrl.dispose();
+    super.dispose();
+  }
+
+  void _scrollToReview() {
+    final ctx = _reviewKey.currentContext;
+    if (ctx != null) {
+      Scrollable.ensureVisible(
+        ctx,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+      );
+    }
+  }
+
+  BookingEntity get booking => widget.booking;
+
+  @override
+  Widget build(BuildContext context) {
     final isLive = booking.status.tab == BookingTab.live;
     final isCompleted = booking.status == BookingStatus.completed;
     final isCancelled = booking.status.tab == BookingTab.cancelled;
@@ -258,6 +285,7 @@ class _DetailBody extends ConsumerWidget {
         booking.assignedWorker == null;
 
     return CustomScrollView(
+      controller: _scrollCtrl,
       slivers: [
         _AppBar(booking: booking),
         SliverToBoxAdapter(
@@ -369,6 +397,10 @@ class _DetailBody extends ConsumerWidget {
                     const SizedBox(height: 16),
                     _TrackWorkerButton(bookingId: booking.id),
                   ],
+                  if (isCompleted) ...[
+                    const SizedBox(height: 16),
+                    _ReviewWorkerButton(onTap: _scrollToReview),
+                  ],
                 ] else if (booking.status == BookingStatus.pending) ...[
                   const SizedBox(height: 16),
                   _ViewBidsButton(booking: booking),
@@ -377,7 +409,10 @@ class _DetailBody extends ConsumerWidget {
 
                 // Review section (completed bookings only)
                 if (isCompleted) ...[
-                  _ReviewSection(booking: booking),
+                  KeyedSubtree(
+                    key: _reviewKey,
+                    child: _ReviewSection(booking: booking),
+                  ),
                   const SizedBox(height: 16),
                 ],
 
@@ -1382,6 +1417,42 @@ class _TrackWorkerButton extends StatelessWidget {
             SizedBox(width: 8),
             Text(
               'Track Worker',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: Colors.white,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Review worker button ──────────────────────────────────────────────────────
+
+class _ReviewWorkerButton extends StatelessWidget {
+  final VoidCallback onTap;
+  const _ReviewWorkerButton({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 50,
+        decoration: BoxDecoration(
+          color: _kGreen,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.star_outline_rounded, size: 16, color: Colors.white),
+            SizedBox(width: 8),
+            Text(
+              'Review Worker',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,

@@ -12,6 +12,14 @@ class NotificationNavigator {
   ///   1. conversationId (or entityType == 'conversation') → chat route
   ///   2. bookingId (or entityType == 'booking') → booking/job route
   ///   3. explicit route field (fallback)
+  // Notification event keys that should open the Track Worker page for clients.
+  static const _trackWorkerEventKeys = {
+    'bid.accepted',
+    'booking.assigned',
+    'worker.hired',
+    'worker.assigned',
+  };
+
   static String? resolveRoute(
     Map<String, dynamic> data, {
     required bool isWorker,
@@ -29,6 +37,11 @@ class NotificationNavigator {
     final bookingId = data['bookingId'] as String?
         ?? (data['entityType'] == 'booking' ? data['entityId'] as String? : null);
     if (bookingId != null && bookingId.isNotEmpty) {
+      final eventKey = data['eventKey'] as String? ?? '';
+      // Client taps a worker-hired/bid-accepted notification → Track Worker page.
+      if (!isWorker && _trackWorkerEventKeys.contains(eventKey)) {
+        return '/client/track/$bookingId';
+      }
       return isWorker
           ? '/worker/job/$bookingId'
           : '/client/booking/$bookingId';

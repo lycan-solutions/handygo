@@ -36,7 +36,7 @@ class _TrackWorkerPageState extends ConsumerState<TrackWorkerPage> {
   @override
   void initState() {
     super.initState();
-    _refreshTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       if (mounted) ref.invalidate(bookingDetailProvider(widget.bookingId));
     });
   }
@@ -232,17 +232,21 @@ class _StatusCard extends StatelessWidget {
                     width: 2,
                   ),
                 ),
-                child: const Icon(
-                  Icons.check_rounded,
+                child: Icon(
+                  booking.status == BookingStatus.completed
+                      ? Icons.check_circle_rounded
+                      : Icons.check_rounded,
                   color: Colors.white,
                   size: 22,
                 ),
               ),
               const SizedBox(width: 14),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'Bid Accepted ✓',
-                  style: TextStyle(
+                  booking.status == BookingStatus.completed
+                      ? 'Job Completed ✓'
+                      : 'Bid Accepted ✓',
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.w700,
                     color: Colors.white,
@@ -254,7 +258,9 @@ class _StatusCard extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Text(
-            '$firstName is heading to your location',
+            booking.status == BookingStatus.completed
+                ? '$firstName has completed the job'
+                : '$firstName is heading to your location',
             style: TextStyle(
               fontSize: 14,
               color: Colors.white.withValues(alpha: 0.85),
@@ -654,14 +660,20 @@ class _ProgressTimeline extends StatelessWidget {
     required this.etaMin,
   });
 
-  int get _rank {
-    return switch (booking.status) {
-      BookingStatus.accepted   => 1,
-      BookingStatus.enRoute    => 2,
-      BookingStatus.inProgress => 4,
-      BookingStatus.completed  => 5,
-      _                        => 0,
-    };
+  // 3 steps: Bid Accepted (rank 1), Arrived (rank 2), Job Completed (rank 3).
+  // Arrived is triggered automatically when distanceM < 150.
+  int _rank({double? distanceM}) {
+    if (booking.status == BookingStatus.completed) return 3;
+    if (booking.status == BookingStatus.inProgress) {
+      // Treat in-progress as arrived
+      return 2;
+    }
+    if (booking.status == BookingStatus.enRoute ||
+        booking.status == BookingStatus.accepted) {
+      if (distanceM != null && distanceM <= 150) return 2;
+      return 1;
+    }
+    return 1;
   }
 
   DateTime? _historyDate(BookingStatus target) {
@@ -673,8 +685,14 @@ class _ProgressTimeline extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rank = _rank;
+    final rank = _rank(distanceM: distanceM);
     final fmt = DateFormat('h:mm a');
+
+    final arrivedAt = booking.status == BookingStatus.inProgress
+        ? (_historyDate(BookingStatus.inProgress) ?? booking.startedAt)
+        : (distanceM != null && distanceM! <= 150
+            ? DateTime.now()
+            : null);
 
     final steps = <_StepData>[
       _StepData(
@@ -685,30 +703,17 @@ class _ProgressTimeline extends StatelessWidget {
         fmt: fmt,
       ),
       _StepData(
-        label: 'On the way',
+        label: 'Arrived',
         requiredRank: 2,
-        timestamp: _historyDate(BookingStatus.enRoute),
+        timestamp: arrivedAt,
         fmt: fmt,
-        subtext: (rank == 2 && distanceM != null)
+        subtext: (rank == 1 && distanceM != null)
             ? 'ETA $etaMin min • Updated now'
             : null,
       ),
       _StepData(
-        label: 'Arrived',
+        label: 'Job Completed',
         requiredRank: 3,
-        timestamp: null,
-        fmt: fmt,
-      ),
-      _StepData(
-        label: 'In progress',
-        requiredRank: 4,
-        timestamp:
-            _historyDate(BookingStatus.inProgress) ?? booking.startedAt,
-        fmt: fmt,
-      ),
-      _StepData(
-        label: 'Job completed',
-        requiredRank: 5,
         timestamp:
             _historyDate(BookingStatus.completed) ?? booking.completedAt,
         fmt: fmt,

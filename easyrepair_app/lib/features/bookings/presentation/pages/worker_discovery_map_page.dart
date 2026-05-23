@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -32,6 +34,7 @@ class WorkerDiscoveryMapPage extends ConsumerStatefulWidget {
 
 class _WorkerDiscoveryMapPageState extends ConsumerState<WorkerDiscoveryMapPage> {
   GoogleMapController? _mapCtrl;
+  Timer? _bidsRefreshTimer;
 
   // Deduplication: track workers already logged for missing location.
   final Set<String> _loggedMissingLocationWorkers = {};
@@ -41,7 +44,16 @@ class _WorkerDiscoveryMapPageState extends ConsumerState<WorkerDiscoveryMapPage>
   List<BidWithWorkerEntity> _prevPendingBids = [];
 
   @override
+  void initState() {
+    super.initState();
+    _bidsRefreshTimer = Timer.periodic(const Duration(seconds: 10), (_) {
+      if (mounted) ref.invalidate(bookingBidsProvider(widget.booking.id));
+    });
+  }
+
+  @override
   void dispose() {
+    _bidsRefreshTimer?.cancel();
     _mapCtrl?.dispose();
     super.dispose();
   }
@@ -588,6 +600,15 @@ class _BidOfferCard extends ConsumerWidget {
           );
       if (context.mounted) {
         ref.invalidate(bookingDetailProvider(bookingId));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Worker hired successfully'),
+            backgroundColor: _kGreen,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            duration: const Duration(seconds: 2),
+          ),
+        );
         Navigator.of(context).pushReplacement(
           MaterialPageRoute<void>(
             builder: (_) => TrackWorkerPage(bookingId: bookingId),

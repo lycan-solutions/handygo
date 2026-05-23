@@ -16,6 +16,7 @@ import 'package:video_player/video_player.dart';
 
 import '../../../../core/services/chat_socket_service.dart';
 import '../../../../features/auth/presentation/providers/auth_providers.dart';
+import '../../../../features/notifications/presentation/providers/notification_providers.dart';
 import '../../domain/entities/chat_entities.dart';
 import '../providers/chat_providers.dart';
 
@@ -78,12 +79,19 @@ class _ChatDetailPageState extends ConsumerState<ChatDetailPage> {
         ref.read(chatMessagesProvider(widget.conversationId)).valueOrNull;
     if (messages == null || messages.isEmpty) return;
     final currentUserId = ref.read(authStateProvider).valueOrNull?.id ?? '';
+    bool markedAny = false;
     for (int i = messages.length - 1; i >= 0; i--) {
       final msg = messages[i];
       if (msg.senderUserId != currentUserId && msg.seenAt == null) {
         ChatSocketService.instance.markSeen(widget.conversationId, msg.id);
+        markedAny = true;
         break;
       }
+    }
+    if (markedAny) {
+      // Clear chat unread counts and any related notification badges.
+      ref.invalidate(chatConversationsProvider);
+      ref.invalidate(unreadNotificationCountProvider);
     }
   }
 
@@ -1072,10 +1080,11 @@ class _MessageBubble extends StatelessWidget {
   Widget build(BuildContext context) {
     final timeStr = _fmt(message.createdAt);
 
-    // Image/video content expands without inner padding
+    // Image/video/location content renders its own internal layout without inner padding
     final isMediaFull = !message.isDeleted &&
         (message.type == ChatMessageType.image ||
-            message.type == ChatMessageType.video);
+            message.type == ChatMessageType.video ||
+            message.type == ChatMessageType.location);
 
     final borderRadius = BorderRadius.only(
       topLeft: const Radius.circular(16),
@@ -1277,22 +1286,30 @@ class _ImageContent extends StatelessWidget {
   const _ImageContent(
       {required this.message, required this.isMe, required this.timeStr});
 
+  static const double _w = 200;
+  static const double _h = 150;
+
   @override
   Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 240, minWidth: 120),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          GestureDetector(
-            onTap: () => _showFullScreen(context, message.mediaUrl!),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GestureDetector(
+          onTap: () => _showFullScreen(context, message.mediaUrl!),
+          child: SizedBox(
+            width: _w,
+            height: _h,
             child: Image.network(
               message.mediaUrl!,
+              width: _w,
+              height: _h,
               fit: BoxFit.cover,
               loadingBuilder: (_, child, progress) {
                 if (progress == null) return child;
-                return SizedBox(
-                  height: 160,
+                return Container(
+                  width: _w,
+                  height: _h,
+                  color: Colors.black12,
                   child: Center(
                     child: CircularProgressIndicator(
                       value: progress.expectedTotalBytes != null
@@ -1305,37 +1322,37 @@ class _ImageContent extends StatelessWidget {
                   ),
                 );
               },
-              errorBuilder: (_, __, ___) => SizedBox(
-                height: 120,
+              errorBuilder: (context, e, s) => Container(
+                width: _w,
+                height: _h,
+                color: Colors.black12,
                 child: Center(
                   child: Icon(
                     Icons.broken_image_rounded,
                     size: 36,
-                    color: isMe
-                        ? Colors.white54
-                        : const Color(0xFF94A3B8),
+                    color: isMe ? Colors.white54 : const Color(0xFF94A3B8),
                   ),
                 ),
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(10, 4, 10, 6),
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: Text(
-                timeStr,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: isMe
-                      ? Colors.white.withValues(alpha: 0.75)
-                      : const Color(0xFF94A3B8),
-                ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(10, 4, 10, 6),
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              timeStr,
+              style: TextStyle(
+                fontSize: 11,
+                color: isMe
+                    ? Colors.white.withValues(alpha: 0.75)
+                    : const Color(0xFF94A3B8),
               ),
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -1364,58 +1381,70 @@ class _VideoContent extends StatelessWidget {
   const _VideoContent(
       {required this.message, required this.isMe, required this.timeStr});
 
+  static const double _w = 200;
+  static const double _h = 150;
+
   @override
   Widget build(BuildContext context) {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(maxWidth: 240, minWidth: 120),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          GestureDetector(
-            onTap: () => _openPlayer(context),
-            child: Container(
-              height: 160,
-              color: Colors.black87,
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.play_circle_fill_rounded,
-                      size: 52,
-                      color: Colors.white.withValues(alpha: 0.92),
+    final thumb = message.thumbnailUrl;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        GestureDetector(
+          onTap: () => _openPlayer(context),
+          child: SizedBox(
+            width: _w,
+            height: _h,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Thumbnail or dark placeholder
+                if (thumb != null && thumb.isNotEmpty)
+                  Image.network(
+                    thumb,
+                    width: _w,
+                    height: _h,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, e, s) => Container(color: Colors.black87),
+                  )
+                else
+                  Container(color: Colors.black87),
+                // Centered play icon
+                Center(
+                  child: Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.45),
+                      shape: BoxShape.circle,
                     ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'Tap to play',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
+                    child: const Icon(
+                      Icons.play_arrow_rounded,
+                      color: Colors.white,
+                      size: 30,
                     ),
-                  ],
+                  ),
                 ),
+              ],
+            ),
+          ),
+        ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(10, 4, 10, 6),
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: Text(
+              timeStr,
+              style: TextStyle(
+                fontSize: 11,
+                color: isMe
+                    ? Colors.white.withValues(alpha: 0.75)
+                    : const Color(0xFF94A3B8),
               ),
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(10, 4, 10, 6),
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: Text(
-                timeStr,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: isMe
-                      ? Colors.white.withValues(alpha: 0.75)
-                      : const Color(0xFF94A3B8),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -1688,6 +1717,9 @@ class _LocationContent extends StatelessWidget {
   const _LocationContent(
       {required this.message, required this.isMe, required this.timeStr});
 
+  static const double _w = 220;
+  static const double _h = 140;
+
   Future<void> _openMaps(BuildContext context) async {
     final lat = message.latitude;
     final lng = message.longitude;
@@ -1709,58 +1741,74 @@ class _LocationContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final lat = message.latitude?.toStringAsFixed(5) ?? '—';
-    final lng = message.longitude?.toStringAsFixed(5) ?? '—';
+    final hasCoords = message.latitude != null && message.longitude != null;
+    final googleMapsKey =
+        const String.fromEnvironment('GOOGLE_MAPS_API_KEY');
+    final lat = message.latitude;
+    final lng = message.longitude;
+
+    // Build a Google Static Maps URL only when a key is configured at build time.
+    final staticMapUrl = (googleMapsKey.isNotEmpty && hasCoords)
+        ? 'https://maps.googleapis.com/maps/api/staticmap'
+            '?center=$lat,$lng'
+            '&zoom=15'
+            '&size=440x280'
+            '&markers=color:0xDB6234%7C$lat,$lng'
+            '&key=$googleMapsKey'
+        : null;
 
     return GestureDetector(
       onTap: () => _openMaps(context),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minWidth: 180),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Row(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ── Map preview ──────────────────────────────────────────
+          ClipRRect(
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(14),
+              topRight: Radius.circular(14),
+            ),
+            child: SizedBox(
+              width: _w,
+              height: _h,
+              child: staticMapUrl != null
+                  ? Image.network(
+                      staticMapUrl,
+                      width: _w,
+                      height: _h,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, e, s) => _MapPlaceholder(isMe: isMe),
+                    )
+                  : _MapPlaceholder(isMe: isMe),
+            ),
+          ),
+          // ── Label row ────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 6, 10, 2),
+            child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   Icons.location_on_rounded,
-                  size: 18,
+                  size: 14,
                   color: isMe ? Colors.white : const Color(0xFFDB6234),
                 ),
                 const SizedBox(width: 4),
                 Text(
-                  'Location',
+                  'Shared location',
                   style: TextStyle(
-                    fontSize: 14,
+                    fontSize: 13,
                     fontWeight: FontWeight.w600,
                     color: isMe ? Colors.white : const Color(0xFF1A1A1A),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 4),
-            Text(
-              '$lat, $lng',
-              style: TextStyle(
-                fontSize: 12,
-                color: isMe
-                    ? Colors.white.withValues(alpha: 0.75)
-                    : const Color(0xFF6B7280),
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              'Tap to open in Maps',
-              style: TextStyle(
-                fontSize: 11,
-                color: isMe
-                    ? Colors.white.withValues(alpha: 0.55)
-                    : const Color(0xFF94A3B8),
-              ),
-            ),
-            const SizedBox(height: 6),
-            Align(
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(10, 0, 10, 6),
+            child: Align(
               alignment: Alignment.centerRight,
               child: Text(
                 timeStr,
@@ -1772,11 +1820,80 @@ class _LocationContent extends StatelessWidget {
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
+}
+
+class _MapPlaceholder extends StatelessWidget {
+  final bool isMe;
+  const _MapPlaceholder({required this.isMe});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: isMe
+          ? const Color(0xFFB85228)
+          : const Color(0xFFE2E8F0),
+      child: Stack(
+        children: [
+          // Simple grid lines to suggest a map
+          CustomPaint(
+            size: const Size(double.infinity, double.infinity),
+            painter: _MapGridPainter(isMe: isMe),
+          ),
+          // Pin icon centered
+          Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.location_on_rounded,
+                  size: 36,
+                  color: isMe ? Colors.white : const Color(0xFFDB6234),
+                ),
+                Container(
+                  width: 6,
+                  height: 6,
+                  decoration: BoxDecoration(
+                    color: (isMe ? Colors.white : const Color(0xFFDB6234))
+                        .withValues(alpha: 0.5),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MapGridPainter extends CustomPainter {
+  final bool isMe;
+  const _MapGridPainter({required this.isMe});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = (isMe ? Colors.white : const Color(0xFFCBD5E1))
+          .withValues(alpha: 0.25)
+      ..strokeWidth = 1;
+
+    const step = 28.0;
+    for (double x = 0; x < size.width; x += step) {
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+    for (double y = 0; y < size.height; y += step) {
+      canvas.drawLine(Offset(0, y), Offset(size.width, y), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_MapGridPainter old) => old.isMe != isMe;
 }
 
 // ── Input bar ─────────────────────────────────────────────────────────────────

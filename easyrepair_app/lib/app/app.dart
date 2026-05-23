@@ -12,7 +12,9 @@ import '../core/services/chat_socket_service.dart';
 import '../core/storage/secure_storage_service.dart';
 import '../core/theme/app_theme.dart';
 import '../features/auth/presentation/providers/auth_providers.dart';
+import '../features/chat/presentation/providers/chat_providers.dart';
 import '../features/notifications/data/datasources/notification_remote_datasource.dart';
+import '../features/notifications/data/repositories/notification_repository_impl.dart';
 import '../features/notifications/presentation/providers/notification_providers.dart';
 
 class EasyRepairApp extends ConsumerStatefulWidget {
@@ -70,7 +72,12 @@ class _EasyRepairAppState extends ConsumerState<EasyRepairApp>
         ChatSocketService.instance.disconnect();
       case AppLifecycleState.resumed:
         final user = ref.read(authStateProvider).valueOrNull;
-        if (user != null) _connectChatSocket();
+        if (user != null) {
+          _connectChatSocket();
+          // Refresh notification badge and chat list once on resume — no polling.
+          ref.invalidate(unreadNotificationCountProvider);
+          ref.invalidate(chatConversationsProvider);
+        }
       default:
         break;
     }
@@ -148,6 +155,24 @@ class _EasyRepairAppState extends ConsumerState<EasyRepairApp>
   }) {
     final router = ref.read(routerProvider);
     NotificationNavigator.navigateByRouter(router, data, isWorker: isWorker);
+
+    // Mark the tapped notification as read and refresh unread count.
+    final notificationId = data['notificationId'] as String?;
+    if (notificationId != null && notificationId.isNotEmpty) {
+      ref
+          .read(notificationRepositoryProvider)
+          .markRead(notificationId)
+          .then((_) {
+        ref.invalidate(unreadNotificationCountProvider);
+        // Also patch the in-memory list if it is already loaded.
+        final notifier = ref.read(notificationsProvider.notifier);
+        notifier.markRead(notificationId);
+      }).catchError((Object _) {});
+    } else {
+      // No notificationId in payload — still refresh the count in case the
+      // backend already marked it (e.g. via a different code path).
+      ref.invalidate(unreadNotificationCountProvider);
+    }
   }
 
   // ── Token management ─────────────────────────────────────────────────────

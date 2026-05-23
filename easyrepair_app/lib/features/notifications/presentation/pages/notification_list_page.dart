@@ -111,7 +111,10 @@ class NotificationListPage extends ConsumerWidget {
     NotificationEntity notification,
   ) {
     if (!notification.isRead) {
+      // Optimistic local update — UI reflects read state immediately.
       ref.read(notificationsProvider.notifier).markRead(notification.id);
+      // Refresh unread badge count.
+      ref.invalidate(unreadNotificationCountProvider);
     }
 
     final user = ref.read(authStateProvider).valueOrNull;
@@ -119,6 +122,7 @@ class NotificationListPage extends ConsumerWidget {
 
     // Build a data map mirroring FCM payload so NotificationNavigator can route it.
     final data = <String, dynamic>{
+      if (notification.eventKey != null) 'eventKey': notification.eventKey,
       if (notification.entityType != null) 'entityType': notification.entityType,
       if (notification.entityId != null) 'entityId': notification.entityId,
       if (notification.bookingId != null) 'bookingId': notification.bookingId,

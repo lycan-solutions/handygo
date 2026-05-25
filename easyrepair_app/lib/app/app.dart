@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/notifications/local_notification_service.dart';
+import '../core/permissions/app_permission_service.dart';
 import '../core/notifications/notification_navigator.dart';
 import '../core/router/app_router.dart';
 import '../core/services/chat_socket_service.dart';
@@ -230,6 +231,13 @@ class _EasyRepairAppState extends ConsumerState<EasyRepairApp>
           _registerFcmToken();
         }
 
+        // Request any missing permissions once per session.
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (context.mounted) {
+            AppPermissionService.instance.maybeRequest(context);
+          }
+        });
+
         // Drain any notification that arrived before auth was ready.
         final pending = _pendingNotificationData;
         if (pending != null) {
@@ -248,6 +256,8 @@ class _EasyRepairAppState extends ConsumerState<EasyRepairApp>
         _pendingNotificationData = null;
         // Disconnect chat socket on logout.
         ChatSocketService.instance.disconnect();
+        // Reset permission session flag so it runs again on next login.
+        AppPermissionService.instance.reset();
       }
     });
 

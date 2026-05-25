@@ -1108,27 +1108,29 @@ class _MessageBubble extends StatelessWidget {
                 left: isMe ? 64 : 0,
                 right: isMe ? 0 : 64,
               ),
-              decoration: BoxDecoration(
-                color: isMe ? const Color(0xFFDB6234) : Colors.white,
-                borderRadius: borderRadius,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.06),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: ClipRRect(
-                borderRadius: borderRadius,
-                child: isMediaFull
-                    ? _buildContent(context, timeStr)
-                    : Padding(
+              decoration: isMediaFull
+                  ? null // media widgets provide their own decoration
+                  : BoxDecoration(
+                      color: isMe ? const Color(0xFFDB6234) : Colors.white,
+                      borderRadius: borderRadius,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.06),
+                          blurRadius: 4,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+              child: isMediaFull
+                  ? _buildContent(context, timeStr)
+                  : ClipRRect(
+                      borderRadius: borderRadius,
+                      child: Padding(
                         padding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 10),
                         child: _buildContent(context, timeStr),
                       ),
-              ),
+                    ),
             ),
             if (showSeen)
               Padding(
@@ -1288,71 +1290,84 @@ class _ImageContent extends StatelessWidget {
 
   static const double _w = 200;
   static const double _h = 150;
+  static const _radius = BorderRadius.all(Radius.circular(14));
+  static const _border = Color(0xFFDB6234);
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        GestureDetector(
-          onTap: () => _showFullScreen(context, message.mediaUrl!),
-          child: SizedBox(
-            width: _w,
-            height: _h,
-            child: Image.network(
-              message.mediaUrl!,
-              width: _w,
-              height: _h,
-              fit: BoxFit.cover,
-              loadingBuilder: (_, child, progress) {
-                if (progress == null) return child;
-                return Container(
-                  width: _w,
-                  height: _h,
-                  color: Colors.black12,
-                  child: Center(
-                    child: CircularProgressIndicator(
-                      value: progress.expectedTotalBytes != null
-                          ? progress.cumulativeBytesLoaded /
-                              progress.expectedTotalBytes!
-                          : null,
-                      color: const Color(0xFFDB6234),
-                      strokeWidth: 2,
-                    ),
-                  ),
-                );
-              },
-              errorBuilder: (context, e, s) => Container(
+    return GestureDetector(
+      onTap: () => _showFullScreen(context, message.mediaUrl!),
+      child: Container(
+        width: _w,
+        height: _h,
+        decoration: BoxDecoration(
+          borderRadius: _radius,
+          border: Border.all(
+            color: _border.withValues(alpha: 0.35),
+            width: 1,
+          ),
+        ),
+        child: ClipRRect(
+          borderRadius: _radius,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              Image.network(
+                message.mediaUrl!,
                 width: _w,
                 height: _h,
-                color: Colors.black12,
-                child: Center(
-                  child: Icon(
-                    Icons.broken_image_rounded,
-                    size: 36,
-                    color: isMe ? Colors.white54 : const Color(0xFF94A3B8),
+                fit: BoxFit.cover,
+                loadingBuilder: (_, child, progress) {
+                  if (progress == null) return child;
+                  return Container(
+                    color: Colors.black12,
+                    child: Center(
+                      child: CircularProgressIndicator(
+                        value: progress.expectedTotalBytes != null
+                            ? progress.cumulativeBytesLoaded /
+                                progress.expectedTotalBytes!
+                            : null,
+                        color: _border,
+                        strokeWidth: 2,
+                      ),
+                    ),
+                  );
+                },
+                errorBuilder: (context, e, s) => Container(
+                  color: Colors.black12,
+                  child: const Center(
+                    child: Icon(
+                      Icons.broken_image_rounded,
+                      size: 36,
+                      color: Color(0xFF94A3B8),
+                    ),
                   ),
                 ),
               ),
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(10, 4, 10, 6),
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              timeStr,
-              style: TextStyle(
-                fontSize: 11,
-                color: isMe
-                    ? Colors.white.withValues(alpha: 0.75)
-                    : const Color(0xFF94A3B8),
+              // Time stamp overlaid bottom-right
+              Positioned(
+                right: 6,
+                bottom: 4,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.35),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    timeStr,
+                    style: const TextStyle(
+                      fontSize: 10,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 
@@ -1383,68 +1398,81 @@ class _VideoContent extends StatelessWidget {
 
   static const double _w = 200;
   static const double _h = 150;
+  static const _radius = BorderRadius.all(Radius.circular(14));
+  static const _border = Color(0xFFDB6234);
 
   @override
   Widget build(BuildContext context) {
     final thumb = message.thumbnailUrl;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        GestureDetector(
-          onTap: () => _openPlayer(context),
-          child: SizedBox(
-            width: _w,
-            height: _h,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                // Thumbnail or dark placeholder
-                if (thumb != null && thumb.isNotEmpty)
-                  Image.network(
-                    thumb,
-                    width: _w,
-                    height: _h,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, e, s) => Container(color: Colors.black87),
-                  )
-                else
-                  Container(color: Colors.black87),
-                // Centered play icon
-                Center(
-                  child: Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.45),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.play_arrow_rounded,
+    return GestureDetector(
+      onTap: () => _openPlayer(context),
+      child: Container(
+        width: _w,
+        height: _h,
+        decoration: BoxDecoration(
+          borderRadius: _radius,
+          border: Border.all(
+            color: _border.withValues(alpha: 0.35),
+            width: 1,
+          ),
+        ),
+        child: ClipRRect(
+          borderRadius: _radius,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // Thumbnail or dark placeholder
+              if (thumb != null && thumb.isNotEmpty)
+                Image.network(
+                  thumb,
+                  width: _w,
+                  height: _h,
+                  fit: BoxFit.cover,
+                  errorBuilder: (context, e, s) =>
+                      const ColoredBox(color: Colors.black87),
+                )
+              else
+                const ColoredBox(color: Colors.black87),
+              // Centered play button
+              Center(
+                child: Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.45),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.play_arrow_rounded,
+                    color: Colors.white,
+                    size: 28,
+                  ),
+                ),
+              ),
+              // Time stamp overlaid bottom-right
+              Positioned(
+                right: 6,
+                bottom: 4,
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.35),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    timeStr,
+                    style: const TextStyle(
+                      fontSize: 10,
                       color: Colors.white,
-                      size: 30,
                     ),
                   ),
                 ),
-              ],
-            ),
-          ),
-        ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(10, 4, 10, 6),
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: Text(
-              timeStr,
-              style: TextStyle(
-                fontSize: 11,
-                color: isMe
-                    ? Colors.white.withValues(alpha: 0.75)
-                    : const Color(0xFF94A3B8),
               ),
-            ),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 
@@ -1718,7 +1746,9 @@ class _LocationContent extends StatelessWidget {
       {required this.message, required this.isMe, required this.timeStr});
 
   static const double _w = 220;
-  static const double _h = 140;
+  static const double _mapH = 130;
+  static const _radius = BorderRadius.all(Radius.circular(14));
+  static const _border = Color(0xFFDB6234);
 
   Future<void> _openMaps(BuildContext context) async {
     final lat = message.latitude;
@@ -1742,86 +1772,92 @@ class _LocationContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final hasCoords = message.latitude != null && message.longitude != null;
-    final googleMapsKey =
-        const String.fromEnvironment('GOOGLE_MAPS_API_KEY');
+    final googleMapsKey = const String.fromEnvironment('GOOGLE_MAPS_API_KEY');
     final lat = message.latitude;
     final lng = message.longitude;
 
-    // Build a Google Static Maps URL only when a key is configured at build time.
     final staticMapUrl = (googleMapsKey.isNotEmpty && hasCoords)
         ? 'https://maps.googleapis.com/maps/api/staticmap'
             '?center=$lat,$lng'
             '&zoom=15'
-            '&size=440x280'
+            '&size=440x260'
             '&markers=color:0xDB6234%7C$lat,$lng'
             '&key=$googleMapsKey'
         : null;
 
     return GestureDetector(
       onTap: () => _openMaps(context),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // ── Map preview ──────────────────────────────────────────
-          ClipRRect(
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(14),
-              topRight: Radius.circular(14),
-            ),
-            child: SizedBox(
-              width: _w,
-              height: _h,
-              child: staticMapUrl != null
-                  ? Image.network(
-                      staticMapUrl,
-                      width: _w,
-                      height: _h,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, e, s) => _MapPlaceholder(isMe: isMe),
-                    )
-                  : _MapPlaceholder(isMe: isMe),
-            ),
+      child: Container(
+        width: _w,
+        decoration: BoxDecoration(
+          borderRadius: _radius,
+          border: Border.all(
+            color: _border.withValues(alpha: 0.35),
+            width: 1,
           ),
-          // ── Label row ────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(10, 6, 10, 2),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  Icons.location_on_rounded,
-                  size: 14,
-                  color: isMe ? Colors.white : const Color(0xFFDB6234),
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  'Shared location',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: isMe ? Colors.white : const Color(0xFF1A1A1A),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(10, 0, 10, 6),
-            child: Align(
-              alignment: Alignment.centerRight,
-              child: Text(
-                timeStr,
-                style: TextStyle(
-                  fontSize: 11,
-                  color: isMe
-                      ? Colors.white.withValues(alpha: 0.75)
-                      : const Color(0xFF94A3B8),
+        ),
+        child: ClipRRect(
+          borderRadius: _radius,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Map area
+              SizedBox(
+                width: _w,
+                height: _mapH,
+                child: staticMapUrl != null
+                    ? Image.network(
+                        staticMapUrl,
+                        width: _w,
+                        height: _mapH,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, e, s) =>
+                            _MapPlaceholder(isMe: isMe),
+                      )
+                    : _MapPlaceholder(isMe: isMe),
+              ),
+              // Label strip — thin, no extra background
+              Padding(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.location_on_rounded,
+                          size: 13,
+                          color: _border,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Shared location',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: isMe
+                                ? const Color(0xFF1A1A1A)
+                                : const Color(0xFF1A1A1A),
+                          ),
+                        ),
+                      ],
+                    ),
+                    Text(
+                      timeStr,
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: Color(0xFF94A3B8),
+                      ),
+                    ),
+                  ],
                 ),
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }

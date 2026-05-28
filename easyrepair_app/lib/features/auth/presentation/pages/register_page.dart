@@ -40,8 +40,7 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
 
   String? _validatePhone(String? value) {
     if (value == null || value.isEmpty) return 'Phone number is required';
-    final regex = RegExp(r'^(\+92|0092|92|0)?[3][0-9]{9}$');
-    if (!regex.hasMatch(value.trim())) {
+    if (!RegExp(r'^(\+92|0092|92|0)?[3][0-9]{9}$').hasMatch(value.trim())) {
       return 'Enter a valid Pakistani mobile number';
     }
     return null;
@@ -78,174 +77,205 @@ class _RegisterPageState extends ConsumerState<RegisterPage> {
     });
 
     final isLoading = ref.watch(registerNotifierProvider).isLoading;
-    final screenHeight = MediaQuery.sizeOf(context).height;
+    final mq = MediaQuery.of(context);
+    final viewInsets = mq.viewInsets.bottom;
+    final isSmall = mq.size.height < 680;
 
     return Scaffold(
-      backgroundColor: _accent,
-      body: Column(
-        children: [
-          // ── Branded header ────────────────────────────────────────────────
-          SizedBox(
-            height: screenHeight * 0.32,
-            child: SafeArea(
-              bottom: false,
-              child: Padding(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Center(
-                      child: Image.asset(
-                        'assets/images/er-icon.png',
-                        height: 56,
-                      ),
-                    ),
-                    const Spacer(),
-                    const Text(
-                      'EASYREPAIR',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white70,
-                        letterSpacing: 2.5,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      'Create\naccount',
-                      style: TextStyle(
-                        fontSize: 40,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                        height: 1.15,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Join EasyRepair and get started today',
-                      style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.white.withAlpha(190),
-                      ),
-                    ),
-                  ],
+      backgroundColor: Colors.white,
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            return SingleChildScrollView(
+              keyboardDismissBehavior:
+                  ScrollViewKeyboardDismissBehavior.onDrag,
+              padding: EdgeInsets.only(bottom: viewInsets + 24),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  minHeight: constraints.maxHeight,
                 ),
-              ),
-            ),
-          ),
-
-          // ── Form panel ────────────────────────────────────────────────────
-          Expanded(
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Color(0xFFF9FAFB),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(30),
-                  topRight: Radius.circular(30),
-                ),
-              ),
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(24, 36, 24, 24),
-                child: Form(
-                  key: _formKey,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      // ── Name row ───────────────────────────────────────────
-                      Row(
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 420),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Expanded(
-                            child: AuthTextField(
-                              controller: _firstNameController,
-                              label: 'First Name',
-                              hint: 'Ali',
-                              prefixIcon: Icons.person_outline_rounded,
-                              validator: (v) =>
-                                  _validateRequired(v, 'First name'),
-                            ),
+                          SizedBox(height: isSmall ? 24 : 40),
+
+                          // ── Header ────────────────────────────────────────
+                          _AuthHeader(
+                            title: 'Create\naccount',
+                            subtitle: 'Join EasyRepair and get started today',
+                            isSmall: isSmall,
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: AuthTextField(
-                              controller: _lastNameController,
-                              label: 'Last Name',
-                              hint: 'Khan',
-                              validator: (v) =>
-                                  _validateRequired(v, 'Last name'),
+
+                          SizedBox(height: isSmall ? 24 : 36),
+
+                          // ── Form ──────────────────────────────────────────
+                          Form(
+                            key: _formKey,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                // Name row
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: AuthTextField(
+                                        controller: _firstNameController,
+                                        label: 'First Name',
+                                        hint: 'Ali',
+                                        prefixIcon:
+                                            Icons.person_outline_rounded,
+                                        validator: (v) =>
+                                            _validateRequired(v, 'First name'),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: AuthTextField(
+                                        controller: _lastNameController,
+                                        label: 'Last Name',
+                                        hint: 'Khan',
+                                        validator: (v) =>
+                                            _validateRequired(v, 'Last name'),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 14),
+
+                                AuthTextField(
+                                  controller: _phoneController,
+                                  label: 'Mobile Number',
+                                  hint: '03XXXXXXXXX',
+                                  keyboardType: TextInputType.phone,
+                                  prefixIcon: Icons.phone_outlined,
+                                  validator: _validatePhone,
+                                ),
+                                const SizedBox(height: 14),
+
+                                AuthTextField(
+                                  controller: _passwordController,
+                                  label: 'Password',
+                                  prefixIcon: Icons.lock_outline_rounded,
+                                  obscureText: true,
+                                  textInputAction: TextInputAction.done,
+                                  validator: _validatePassword,
+                                  onFieldSubmitted: (_) => _submit(),
+                                ),
+                                const SizedBox(height: 20),
+
+                                // Role picker
+                                _RolePicker(
+                                  selected: _selectedRole,
+                                  onChanged: (v) =>
+                                      setState(() => _selectedRole = v),
+                                ),
+                                const SizedBox(height: 28),
+
+                                _PrimaryButton(
+                                  label: 'Create Account',
+                                  isLoading: isLoading,
+                                  onPressed: _submit,
+                                ),
+                                const SizedBox(height: 24),
+
+                                // Login link
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Text(
+                                      'Already have an account?  ',
+                                      style: TextStyle(
+                                          color: _slate, fontSize: 14),
+                                    ),
+                                    GestureDetector(
+                                      onTap: () =>
+                                          context.go('/auth/login'),
+                                      child: const Text(
+                                        'Sign In',
+                                        style: TextStyle(
+                                          color: _accent,
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 8),
+                              ],
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
-
-                      // ── Phone ──────────────────────────────────────────────
-                      AuthTextField(
-                        controller: _phoneController,
-                        label: 'Mobile Number',
-                        hint: '03XXXXXXXXX',
-                        keyboardType: TextInputType.phone,
-                        prefixIcon: Icons.phone_outlined,
-                        validator: _validatePhone,
-                      ),
-                      const SizedBox(height: 16),
-
-                      // ── Password ───────────────────────────────────────────
-                      AuthTextField(
-                        controller: _passwordController,
-                        label: 'Password',
-                        prefixIcon: Icons.lock_outline_rounded,
-                        obscureText: true,
-                        textInputAction: TextInputAction.done,
-                        validator: _validatePassword,
-                        onFieldSubmitted: (_) => _submit(),
-                      ),
-                      const SizedBox(height: 16),
-
-                      // ── Role picker ────────────────────────────────────────
-                      _RolePicker(
-                        selected: _selectedRole,
-                        onChanged: (v) => setState(() => _selectedRole = v),
-                      ),
-                      const SizedBox(height: 30),
-
-                      // ── Submit ─────────────────────────────────────────────
-                      _PrimaryButton(
-                        label: 'Create Account',
-                        isLoading: isLoading,
-                        onPressed: _submit,
-                      ),
-                      const SizedBox(height: 24),
-
-                      // ── Login link ─────────────────────────────────────────
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Text(
-                            'Already have an account?  ',
-                            style: TextStyle(color: _slate, fontSize: 14),
-                          ),
-                          GestureDetector(
-                            onTap: () => context.go('/auth/login'),
-                            child: const Text(
-                              'Sign In',
-                              style: TextStyle(
-                                color: _accent,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
+                    ),
                   ),
                 ),
               ),
-            ),
-          ),
-        ],
+            );
+          },
+        ),
       ),
+    );
+  }
+}
+
+// ── Shared header (same as login_page) ───────────────────────────────────────
+
+class _AuthHeader extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final bool isSmall;
+
+  const _AuthHeader({
+    required this.title,
+    required this.subtitle,
+    required this.isSmall,
+  });
+
+  static const _accent = Color(0xFFDB6234);
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: isSmall ? 44 : 56,
+          height: isSmall ? 44 : 56,
+          decoration: BoxDecoration(
+            color: _accent,
+            borderRadius: BorderRadius.circular(14),
+          ),
+          child: const Icon(
+            Icons.home_repair_service_rounded,
+            color: Colors.white,
+            size: 28,
+          ),
+        ),
+        SizedBox(height: isSmall ? 16 : 24),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: isSmall ? 30 : 36,
+            fontWeight: FontWeight.w800,
+            color: const Color(0xFF1A1A1A),
+            height: 1.15,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          subtitle,
+          style: const TextStyle(
+            fontSize: 14,
+            color: Color(0xFF6B7280),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -323,44 +353,48 @@ class _RoleOption extends StatelessWidget {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+        padding:
+            const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
         decoration: BoxDecoration(
-          color: isSelected
-              ? _accent.withAlpha(20)
-              : Colors.white,
-          borderRadius: BorderRadius.circular(14),
+          color: isSelected ? _accent.withAlpha(20) : Colors.white,
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: isSelected ? _accent : const Color(0xFFE2E8F0),
-            width: isSelected ? 2 : 1,
+            width: isSelected ? 1.5 : 1,
           ),
         ),
         child: Row(
           children: [
             Icon(
               icon,
-              size: 22,
+              size: 20,
               color: isSelected ? _accent : const Color(0xFF94A3B8),
             ),
-            const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w700,
-                    color: isSelected ? _accent : const Color(0xFF1A1A1A),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: isSelected
+                          ? _accent
+                          : const Color(0xFF1A1A1A),
+                    ),
                   ),
-                ),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: Color(0xFF94A3B8),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: Color(0xFF94A3B8),
+                    ),
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -382,21 +416,22 @@ class _PrimaryButton extends StatelessWidget {
     required this.onPressed,
   });
 
+  static const _accent = Color(0xFFDB6234);
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      height: 56,
+      height: 52,
       child: ElevatedButton(
         onPressed: isLoading ? null : onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFDB6234),
+          backgroundColor: _accent,
           foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
-          disabledBackgroundColor:
-              const Color(0xFFDB6234).withAlpha(150),
+          disabledBackgroundColor: _accent.withAlpha(150),
         ),
         child: isLoading
             ? const SizedBox(

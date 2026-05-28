@@ -4,6 +4,7 @@ import {
   UnauthorizedException,
   ForbiddenException,
   NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -12,19 +13,33 @@ import { v4 as uuidv4 } from 'uuid';
 import { Role } from '@prisma/client';
 import { AuthRepository } from './auth.repository';
 import { StorageService } from '../storage/storage.service';
+import { WhatsappOtpService } from './whatsapp-otp.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { AuthResponseDto } from './dto/auth-response.dto';
+import { ForgotPasswordRequestDto } from './dto/forgot-password-request.dto';
+import { ForgotPasswordResetDto } from './dto/forgot-password-reset.dto';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly authRepository: AuthRepository,
     private readonly jwtService: JwtService,
     private readonly config: ConfigService,
     private readonly storageService: StorageService,
+    private readonly whatsappOtp: WhatsappOtpService,
   ) {}
+
+  private _normalizePhone(phone: string): string {
+    const digits = phone.replace(/\D/g, '');
+    if (digits.startsWith('92') && digits.length === 12) return `+${digits}`;
+    if (digits.startsWith('0') && digits.length === 11) return `+92${digits.slice(1)}`;
+    if (digits.length === 10 && digits.startsWith('3')) return `+92${digits}`;
+    return phone; // already E.164 or unknown format — pass through
+  }
 
   async register(dto: RegisterDto): Promise<AuthResponseDto> {
     const existing = await this.authRepository.findUserByPhone(dto.phone);
@@ -208,6 +223,82 @@ export class AuthService {
     const user = await this.authRepository.findUserById(userId);
     if (!user) throw new NotFoundException('User not found');
     return this.authRepository.getAvatarUrls(userId, user.role);
+  }
+
+  async forgotPasswordRequest(dto: ForgotPasswordRequestDto): Promise<{ message: string }> {
+    const normalized = this._normalizePhone(dto.phone);
+    const safeResponse = { message: 'If this number is registered, a reset code will be sent.' };
+
+    const user = await this.authRepository.findUserByNormalizedPhone(normalized);
+    if (!user) return safeResponse;
+
+    // Rate limit: max 3 requests per phone in last 30 minutes
+    const since = new Date(Date.now() - 30 * 60 * 1000);
+    const recentCount = await this.authRepository.countRecentOtpRequests(normalized, since);
+    if (recentCount >= 3) {
+      this.logger.warn(`OTP rate limit hit for ${normalized}`);
+      return safeResponse;
+    }
+
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const otpHash = await bcrypt.hash(otp, 10);
+    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
+
+    await this.authRepository.invalidatePreviousOtps(user.id, normalized);
+    await this.authRepository.createPasswordResetOtp({ userId: user.id, phone: normalized, otpHash, expiresAt });
+
+    if (this.whatsappOtp.isConfigured) {
+      try {
+        await this.whatsappOtp.sendOtp(normalized, otp);
+      } catch (err) {
+        this.logger.warn(`WhatsApp OTP send failed for ${normalized}: ${(err as Error).message}`);
+      }
+    } else if (process.env.NODE_ENV !== 'production') {
+      this.logger.log(`[DEV OTP] phone=${normalized} code=${otp}`);
+    } else {
+      this.logger.warn('WhatsApp OTP not configured — forgot password OTP not sent');
+    }
+
+    return safeResponse;
+  }
+
+  async forgotPasswordReset(dto: ForgotPasswordResetDto): Promise<{ message: string }> {
+    const normalized = this._normalizePhone(dto.phone);
+    const invalidError = new UnauthorizedException('Invalid or expired reset code.');
+
+    const user = await this.authRepository.findUserByNormalizedPhone(normalized);
+    if (!user) throw invalidError;
+
+    const record = await this.authRepository.findActiveOtp(user.id, normalized);
+
+    if (!record) {
+      // Dev fallback: allow FORGOT_PASSWORD_DEV_OTP if non-production and env set
+      if (process.env.NODE_ENV !== 'production') {
+        const devOtp = this.config.get<string>('forgotPassword.devOtp');
+        if (devOtp && dto.otp === devOtp) {
+          const passwordHash = await bcrypt.hash(dto.newPassword, 12);
+          await this.authRepository.updatePassword(user.id, passwordHash);
+          return { message: 'Password reset successfully.' };
+        }
+      }
+      throw invalidError;
+    }
+
+    if (record.attempts >= 5) {
+      await this.authRepository.consumeOtp(record.id);
+      throw invalidError;
+    }
+
+    const valid = await bcrypt.compare(dto.otp, record.otpHash);
+    if (!valid) {
+      await this.authRepository.incrementOtpAttempts(record.id);
+      throw invalidError;
+    }
+
+    const passwordHash = await bcrypt.hash(dto.newPassword, 12);
+    await this.authRepository.updatePassword(user.id, passwordHash);
+    await this.authRepository.consumeAllActiveOtps(user.id, normalized);
+    return { message: 'Password reset successfully.' };
   }
 
   /** Upload a new profile picture and persist the URL for the user. */

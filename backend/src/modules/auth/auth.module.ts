@@ -6,6 +6,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { AuthRepository } from './auth.repository';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { WhatsappOtpService } from './whatsapp-otp.service';
 import { StorageModule } from '../storage/storage.module';
 
 @Module({
@@ -24,7 +25,7 @@ import { StorageModule } from '../storage/storage.module';
       }),
     }),
   ],
-  providers: [AuthService, AuthRepository, JwtStrategy],
+  providers: [AuthService, AuthRepository, JwtStrategy, WhatsappOtpService],
   controllers: [AuthController],
   exports: [JwtStrategy, PassportModule],
 })

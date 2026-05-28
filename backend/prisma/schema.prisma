@@ -97,12 +97,32 @@ model User {
   workerProfile WorkerProfile?
   refreshTokens RefreshToken[]
   notifications Notification[]
+  passwordResetOtps PasswordResetOtp[]
 
   conversationsAsClient Conversation[] @relation("ClientConversations")
   conversationsAsWorker Conversation[] @relation("WorkerConversations")
   chatMessages          Message[]      @relation("ChatMessages")
 
   @@map("users")
+}
+
+model PasswordResetOtp {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  phone       String
+  otpHash     String
+  expiresAt   DateTime
+  consumedAt  DateTime?
+  attempts    Int       @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([phone])
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([consumedAt])
+  @@map("password_reset_otps")
 }
 
 model RefreshToken {
@@ -160,7 +180,7 @@ model WorkerProfile {
   avatarUrl          String?
   avatarStorageKey   String?
   bio                String?
-  status             WorkerStatus       @default(INACTIVE)
+  status             WorkerStatus       @default(ACTIVE)
   verificationStatus VerificationStatus @default(PENDING)
   isOnline           Boolean            @default(false)
   availabilityStatus AvailabilityStatus @default(OFFLINE)

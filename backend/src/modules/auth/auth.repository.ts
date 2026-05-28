@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Role, User } from '@prisma/client';
+import { PasswordResetOtp, Role, User } from '@prisma/client';
 
 @Injectable()
 export class AuthRepository {
@@ -135,6 +135,75 @@ export class AuthRepository {
     await this.prisma.user.update({
       where: { id: userId },
       data: { fcmToken: token },
+    });
+  }
+
+  async findUserByNormalizedPhone(normalizedPhone: string): Promise<User | null> {
+    // Try exact match first (e.g. stored as +923001234567)
+    const byExact = await this.prisma.user.findUnique({
+      where: { phone: normalizedPhone },
+    });
+    if (byExact) return byExact;
+
+    // Fallback: stored without country code (e.g. 03001234567)
+    const local = normalizedPhone.replace(/^\+92/, '0');
+    return this.prisma.user.findUnique({ where: { phone: local } });
+  }
+
+  async updatePassword(userId: string, passwordHash: string): Promise<void> {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { passwordHash },
+    });
+  }
+
+  async countRecentOtpRequests(phone: string, since: Date): Promise<number> {
+    return this.prisma.passwordResetOtp.count({
+      where: { phone, createdAt: { gte: since } },
+    });
+  }
+
+  async invalidatePreviousOtps(userId: string, phone: string): Promise<void> {
+    await this.prisma.passwordResetOtp.updateMany({
+      where: { userId, phone, consumedAt: null },
+      data: { consumedAt: new Date() },
+    });
+  }
+
+  async createPasswordResetOtp(data: {
+    userId: string;
+    phone: string;
+    otpHash: string;
+    expiresAt: Date;
+  }): Promise<void> {
+    await this.prisma.passwordResetOtp.create({ data });
+  }
+
+  async findActiveOtp(userId: string, phone: string): Promise<PasswordResetOtp | null> {
+    return this.prisma.passwordResetOtp.findFirst({
+      where: { userId, phone, consumedAt: null, expiresAt: { gt: new Date() } },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async incrementOtpAttempts(id: string): Promise<void> {
+    await this.prisma.passwordResetOtp.update({
+      where: { id },
+      data: { attempts: { increment: 1 } },
+    });
+  }
+
+  async consumeOtp(id: string): Promise<void> {
+    await this.prisma.passwordResetOtp.update({
+      where: { id },
+      data: { consumedAt: new Date() },
+    });
+  }
+
+  async consumeAllActiveOtps(userId: string, phone: string): Promise<void> {
+    await this.prisma.passwordResetOtp.updateMany({
+      where: { userId, phone, consumedAt: null },
+      data: { consumedAt: new Date() },
     });
   }
 }

@@ -56,6 +56,22 @@ class AuthRemoteDatasource {
     final data = response.data['data'] ?? response.data;
     return UserModel.fromJson(data as Map<String, dynamic>);
   }
+
+  Future<void> forgotPasswordRequest(String phone) async {
+    await _dio.post('/auth/forgot-password/request', data: {'phone': phone});
+  }
+
+  Future<void> forgotPasswordReset({
+    required String phone,
+    required String otp,
+    required String newPassword,
+  }) async {
+    await _dio.post('/auth/forgot-password/reset', data: {
+      'phone': phone,
+      'otp': otp,
+      'newPassword': newPassword,
+    });
+  }
 }
 
 final authRemoteDatasourceProvider = Provider<AuthRemoteDatasource>((ref) {

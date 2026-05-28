@@ -31,4 +31,15 @@ export default () => ({
     feePercent: parseInt(process.env.PLATFORM_FEE_PERCENT || '10', 10),
   },
   usePostgis: process.env.USE_POSTGIS === 'true',
+  whatsapp: {
+    token: process.env.WHATSAPP_TOKEN,
+    phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
+    apiVersion: process.env.WHATSAPP_API_VERSION || 'v20.0',
+    otpTemplateName: process.env.WHATSAPP_OTP_TEMPLATE_NAME,
+    otpTemplateLanguage: process.env.WHATSAPP_OTP_TEMPLATE_LANGUAGE || 'en_US',
+    includeButtonCode: process.env.WHATSAPP_OTP_INCLUDE_BUTTON_CODE || 'false',
+  },
+  forgotPassword: {
+    devOtp: process.env.FORGOT_PASSWORD_DEV_OTP,
+  },
 });

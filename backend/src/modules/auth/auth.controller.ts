@@ -16,6 +16,8 @@ import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
+import { ForgotPasswordRequestDto } from './dto/forgot-password-request.dto';
+import { ForgotPasswordResetDto } from './dto/forgot-password-reset.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
@@ -66,6 +68,18 @@ export class AuthController {
     @Body('token') token: string,
   ) {
     return this.authService.saveFcmToken(user.id, token);
+  }
+
+  @Post('forgot-password/request')
+  @HttpCode(HttpStatus.OK)
+  forgotPasswordRequest(@Body() dto: ForgotPasswordRequestDto) {
+    return this.authService.forgotPasswordRequest(dto);
+  }
+
+  @Post('forgot-password/reset')
+  @HttpCode(HttpStatus.OK)
+  forgotPasswordReset(@Body() dto: ForgotPasswordResetDto) {
+    return this.authService.forgotPasswordReset(dto);
   }
 
   /** GET /auth/avatar — fetch current profile avatar URL */

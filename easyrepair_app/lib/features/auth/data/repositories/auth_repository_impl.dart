@@ -90,6 +90,38 @@ class AuthRepositoryImpl implements AuthRepository {
       return Left(ServerFailure(e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, void>> forgotPasswordRequest(String phone) async {
+    try {
+      await _datasource.forgotPasswordRequest(phone);
+      return const Right(null);
+    } on DioException catch (e) {
+      return Left(dioExceptionToFailure(e));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> forgotPasswordReset({
+    required String phone,
+    required String otp,
+    required String newPassword,
+  }) async {
+    try {
+      await _datasource.forgotPasswordReset(
+        phone: phone,
+        otp: otp,
+        newPassword: newPassword,
+      );
+      return const Right(null);
+    } on DioException catch (e) {
+      return Left(dioExceptionToFailure(e));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
 }
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {

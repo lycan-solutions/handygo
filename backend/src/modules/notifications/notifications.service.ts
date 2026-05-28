@@ -62,8 +62,10 @@ export class NotificationsService {
       payload,
     };
 
+    let notificationId: string | undefined;
     try {
-      await this.notificationsRepository.create(data);
+      const saved = await this.notificationsRepository.create(data);
+      notificationId = saved.id;
     } catch (err) {
       this.logger.warn(`Failed to persist notification for userId=${userId}: ${err}`);
     }
@@ -79,6 +81,10 @@ export class NotificationsService {
       actorUserId: actorUserId ?? '',
       actorRole: actorRole ?? '',
     };
+    // Include the persisted notification id so the client can mark it read on tap.
+    if (notificationId) {
+      fcmData.notificationId = notificationId;
+    }
     // Include role-aware navigation keys so Flutter can route without parsing entityType.
     if (resolvedEntityType === 'conversation' && resolvedEntityId) {
       fcmData.conversationId = resolvedEntityId;

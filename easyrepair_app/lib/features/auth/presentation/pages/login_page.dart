@@ -126,25 +126,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                     onFieldSubmitted: (_) => _submit(),
                                   ),
                                   const SizedBox(height: 8),
-                                  Align(
-                                    alignment: Alignment.centerRight,
-                                    child: GestureDetector(
-                                      onTap: () =>
-                                          context.push('/forgot-password'),
-                                      child: const Padding(
-                                        padding: EdgeInsets.symmetric(
-                                            vertical: 6),
-                                        child: Text(
-                                          'Forgot password?',
-                                          style: TextStyle(
-                                            color: _accent,
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
+                                  // TODO: Re-enable forgot password after Pakistan SMS provider is configured.
                                   const SizedBox(height: 20),
                                   _PrimaryButton(
                                     label: 'Sign In',

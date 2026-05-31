@@ -7,6 +7,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:url_launcher/url_launcher.dart';
+
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../../core/network/api_client.dart';
 import '../../../../core/presentation/pages/general_info_page.dart';
@@ -383,6 +385,10 @@ class _WorkerProfilePageState extends ConsumerState<WorkerProfilePage> {
                     ),
                     const SizedBox(height: 32),
                     _LogoutButton(ref: ref),
+                    const SizedBox(height: 24),
+                    _SectionLabel(label: 'Danger Zone'),
+                    const SizedBox(height: 10),
+                    _DeleteAccountSection(ref: ref),
                   ],
                 ),
               ),
@@ -730,6 +736,156 @@ class _SettingsItem extends StatelessWidget {
             color: Color(0xFFF1F5F9),
           ),
       ],
+    );
+  }
+}
+
+const _kDeleteRed = Color(0xFFDB6234);
+
+class _DeleteAccountSection extends StatelessWidget {
+  final WidgetRef ref;
+  const _DeleteAccountSection({required this.ref});
+
+  Future<void> _confirmDelete(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Delete account?',
+          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 17),
+        ),
+        content: const Text(
+          'This will delete your Handygo account and sign you out. This action may not be reversible.',
+          style: TextStyle(fontSize: 14, color: Color(0xFF6B7280)),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel',
+                style: TextStyle(color: Color(0xFF6B7280))),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Delete',
+                style: TextStyle(
+                    color: _kDeleteRed, fontWeight: FontWeight.w700)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+
+    final success = await ref
+        .read(deleteAccountNotifierProvider.notifier)
+        .deleteAccount();
+
+    if (!context.mounted) return;
+    if (!success) {
+      final state = ref.read(deleteAccountNotifierProvider);
+      final msg = state is AsyncError
+          ? (state.error as dynamic).message as String? ?? 'Failed to delete account.'
+          : 'Failed to delete account.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(msg), backgroundColor: Colors.red.shade700),
+      );
+    }
+  }
+
+  Future<void> _requestByEmail() async {
+    final uri = Uri.parse(
+      'mailto:support@handygo.ai?subject=Handygo%20Account%20Deletion%20Request',
+    );
+    if (await canLaunchUrl(uri)) await launchUrl(uri);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          InkWell(
+            onTap: () => _confirmDelete(context),
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: _kDeleteRed.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.delete_forever_rounded,
+                        size: 18, color: _kDeleteRed),
+                  ),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Text(
+                      'Delete Account',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: _kDeleteRed,
+                      ),
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right_rounded,
+                      size: 20, color: Color(0xFF6B7280)),
+                ],
+              ),
+            ),
+          ),
+          const Divider(height: 1, indent: 66, endIndent: 16, color: Color(0xFFF1F5F9)),
+          InkWell(
+            onTap: _requestByEmail,
+            borderRadius: BorderRadius.circular(16),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+              child: Row(
+                children: [
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF6B7280).withValues(alpha: 0.08),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.mail_outline_rounded,
+                        size: 18, color: Color(0xFF6B7280)),
+                  ),
+                  const SizedBox(width: 14),
+                  const Expanded(
+                    child: Text(
+                      'Request deletion by email',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        color: Color(0xFF6B7280),
+                      ),
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right_rounded,
+                      size: 20, color: Color(0xFF6B7280)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

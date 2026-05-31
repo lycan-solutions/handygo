@@ -3,6 +3,7 @@ import {
   Post,
   Get,
   Patch,
+  Delete,
   Body,
   HttpCode,
   HttpStatus,
@@ -80,6 +81,14 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   forgotPasswordReset(@Body() dto: ForgotPasswordResetDto) {
     return this.authService.forgotPasswordReset(dto);
+  }
+
+  /** DELETE /auth/account — soft-delete the authenticated user's account */
+  @Delete('account')
+  @HttpCode(HttpStatus.OK)
+  @UseGuards(JwtAuthGuard)
+  deleteAccount(@CurrentUser() user: { id: string }) {
+    return this.authService.deleteAccount(user.id);
   }
 
   /** GET /auth/avatar — fetch current profile avatar URL */

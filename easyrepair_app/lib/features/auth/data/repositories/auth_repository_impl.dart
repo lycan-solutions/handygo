@@ -122,6 +122,19 @@ class AuthRepositoryImpl implements AuthRepository {
       return Left(ServerFailure(e.toString()));
     }
   }
+
+  @override
+  Future<Either<Failure, void>> deleteAccount() async {
+    try {
+      await _datasource.deleteAccount();
+      await _storage.clearTokens();
+      return const Right(null);
+    } on DioException catch (e) {
+      return Left(dioExceptionToFailure(e));
+    } catch (e) {
+      return Left(ServerFailure(e.toString()));
+    }
+  }
 }
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {

@@ -206,4 +206,14 @@ export class AuthRepository {
       data: { consumedAt: new Date() },
     });
   }
+
+  async softDeleteUser(userId: string): Promise<void> {
+    await this.prisma.$transaction(async (tx) => {
+      await tx.user.update({
+        where: { id: userId },
+        data: { deletedAt: new Date(), isActive: false, fcmToken: null },
+      });
+      await tx.refreshToken.deleteMany({ where: { userId } });
+    });
+  }
 }

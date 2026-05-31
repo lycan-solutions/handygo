@@ -1,4 +1,4 @@
-package com.example.easyrepair_app
+package ai.handygo.app
 
 import io.flutter.embedding.android.FlutterActivity
 

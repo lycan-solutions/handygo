@@ -72,7 +72,7 @@ export class AuthService {
 
   async login(dto: LoginDto): Promise<AuthResponseDto> {
     const user = await this.authRepository.findUserByPhone(dto.phone);
-    if (!user) {
+    if (!user || user.deletedAt !== null) {
       throw new UnauthorizedException('Invalid phone number or password');
     }
 
@@ -299,6 +299,13 @@ export class AuthService {
     await this.authRepository.updatePassword(user.id, passwordHash);
     await this.authRepository.consumeAllActiveOtps(user.id, normalized);
     return { message: 'Password reset successfully.' };
+  }
+
+  async deleteAccount(userId: string): Promise<{ message: string }> {
+    const user = await this.authRepository.findUserById(userId);
+    if (!user) throw new UnauthorizedException('User not found');
+    await this.authRepository.softDeleteUser(userId);
+    return { message: 'Account deleted successfully.' };
   }
 
   /** Upload a new profile picture and persist the URL for the user. */

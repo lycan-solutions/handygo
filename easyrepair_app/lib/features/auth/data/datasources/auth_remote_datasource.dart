@@ -72,6 +72,10 @@ class AuthRemoteDatasource {
       'newPassword': newPassword,
     });
   }
+
+  Future<void> deleteAccount() async {
+    await _dio.delete('/auth/account');
+  }
 }
 
 final authRemoteDatasourceProvider = Provider<AuthRemoteDatasource>((ref) {

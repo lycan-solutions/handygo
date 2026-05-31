@@ -29,4 +29,6 @@ abstract class AuthRepository {
     required String otp,
     required String newPassword,
   });
+
+  Future<Either<Failure, void>> deleteAccount();
 }

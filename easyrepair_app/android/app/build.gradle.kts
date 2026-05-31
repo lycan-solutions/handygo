@@ -21,7 +21,7 @@ if (keyPropertiesFile.exists()) {
 }
 
 android {
-    namespace = "com.example.easyrepair_app"
+    namespace = "ai.handygo.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -45,7 +45,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "com.easyrepair.app"
+        applicationId = "ai.handygo.app"
         // record v6 + flutter_secure_storage v9 both require API 23 minimum.
         // Flutter's default (flutter.minSdkVersion) is 21; override to 23.
         // Drops Android 5.0–5.1 (<1% market share) which had broken secure
@@ -54,7 +54,9 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        manifestPlaceholders["MAPS_API_KEY"] = System.getenv("GOOGLE_MAPS_API_KEY") ?: ""
+        manifestPlaceholders["MAPS_API_KEY"] = (project.findProperty("GOOGLE_MAPS_API_KEY") as String?)
+            ?: System.getenv("GOOGLE_MAPS_API_KEY")
+            ?: ""
     }
 
     buildTypes {
@@ -70,7 +72,7 @@ android {
                 "proguard-rules.pro",
             )
 
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (keyPropertiesFile.exists()) signingConfigs.getByName("release") else signingConfigs.getByName("debug")
         }
 
         debug {

@@ -120,6 +120,33 @@ class LogoutNotifier extends AsyncNotifier<void> {
 final logoutNotifierProvider =
     AsyncNotifierProvider<LogoutNotifier, void>(LogoutNotifier.new);
 
+// ── Delete account notifier ───────────────────────────────────────────────────
+
+class DeleteAccountNotifier extends AsyncNotifier<void> {
+  @override
+  Future<void> build() async {}
+
+  Future<bool> deleteAccount() async {
+    state = const AsyncLoading();
+    final result = await ref.read(authRepositoryProvider).deleteAccount();
+    return result.fold(
+      (failure) {
+        state = AsyncError(failure, StackTrace.current);
+        return false;
+      },
+      (_) {
+        ref.invalidate(authStateProvider);
+        state = const AsyncData(null);
+        return true;
+      },
+    );
+  }
+}
+
+final deleteAccountNotifierProvider =
+    AsyncNotifierProvider<DeleteAccountNotifier, void>(
+        DeleteAccountNotifier.new);
+
 // ── Helper extension ──────────────────────────────────────────────────────────
 
 extension FailureMessage on Failure {

@@ -200,18 +200,26 @@ class _AuthHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Logo
-        Container(
-          width: isSmall ? 44 : 56,
-          height: isSmall ? 44 : 56,
-          decoration: BoxDecoration(
-            color: _accent,
-            borderRadius: BorderRadius.circular(14),
-          ),
-          child: const Icon(
-            Icons.home_repair_service_rounded,
-            color: Colors.white,
-            size: 28,
-          ),
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              'assets/images/logo-green.png',
+              width: isSmall ? 36 : 44,
+              height: isSmall ? 36 : 44,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(width: 10),
+            Text(
+              'Handygo',
+              style: TextStyle(
+                fontSize: isSmall ? 22 : 26,
+                fontWeight: FontWeight.w800,
+                color: _accent,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ],
         ),
         SizedBox(height: isSmall ? 16 : 24),
         Text(

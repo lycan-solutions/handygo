@@ -358,6 +358,51 @@ export class BookingsRepository {
   // ── Nearby workers ───────────────────────────────────────────────────────────
 
   /**
+   * Find all ACTIVE + VERIFIED + ONLINE workers within radiusKm of a booking
+   * who have the matching skill category and a valid FCM token.
+   * Used to send NEW_JOB push notifications when a booking is created.
+   */
+  async findEligibleOnlineWorkers(params: {
+    categoryId: string;
+    lat: number;
+    lng: number;
+    radiusKm: number;
+  }): Promise<Array<{ userId: string }>> {
+    const all = await this.prisma.workerProfile.findMany({
+      where: {
+        status: WorkerStatus.ACTIVE,
+        verificationStatus: VerificationStatus.VERIFIED,
+        availabilityStatus: AvailabilityStatus.ONLINE,
+        currentlyWorking: false,
+        currentLat: { not: null },
+        currentLng: { not: null },
+        skills: { some: { categoryId: params.categoryId } },
+      },
+      select: {
+        userId: true,
+        currentLat: true,
+        currentLng: true,
+      },
+    });
+
+    // Filter by Haversine distance in TypeScript (avoids PostGIS requirement).
+    const R = 6371;
+    return all.filter((w) => {
+      const lat2 = w.currentLat!;
+      const lng2 = w.currentLng!;
+      const dLat = ((lat2 - params.lat) * Math.PI) / 180;
+      const dLng = ((lng2 - params.lng) * Math.PI) / 180;
+      const a =
+        Math.sin(dLat / 2) ** 2 +
+        Math.cos((params.lat * Math.PI) / 180) *
+          Math.cos((lat2 * Math.PI) / 180) *
+          Math.sin(dLng / 2) ** 2;
+      const distKm = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return distKm <= params.radiusKm;
+    }).map((w) => ({ userId: w.userId }));
+  }
+
+  /**
    * Find a worker profile by id for availability validation before assignment.
    */
   async findWorkerProfileById(workerProfileId: string) {

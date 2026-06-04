@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:fpdart/fpdart.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/errors/dio_failure_mapper.dart';
@@ -104,10 +105,15 @@ class WorkerRepositoryImpl implements WorkerRepository {
   }
 
   NewJobEntity _parseNewJob(Map<String, dynamic> j) {
-    final cat = j['category'] as Map<String, dynamic>;
-    final cli = j['client'] as Map<String, dynamic>;
+    final cat = j['category'] as Map<String, dynamic>?;
+    final cli = j['client'] as Map<String, dynamic>?;
+    final jobId = j['id'] as String;
+    debugPrint(
+      '[NewJobs] parsing jobId=$jobId status=${j['status']} urgency=${j['urgency']} '
+      'categoryId=${cat?['id']} distanceKm=${j['distanceKm']} hasMyBid=${j['hasMyBid']}',
+    );
     return NewJobEntity(
-      id: j['id'] as String,
+      id: jobId,
       title: j['title'] as String?,
       description: j['description'] as String?,
       status: BookingStatus.pending,
@@ -124,15 +130,15 @@ class WorkerRepositoryImpl implements WorkerRepository {
           : null,
       createdAt: DateTime.parse(j['createdAt'] as String),
       category: NewJobCategoryEntity(
-        id: cat['id'] as String,
-        name: cat['name'] as String,
-        iconUrl: cat['iconUrl'] as String?,
+        id: cat?['id'] as String? ?? '',
+        name: cat?['name'] as String? ?? '',
+        iconUrl: cat?['iconUrl'] as String?,
       ),
       client: NewJobClientEntity(
-        id: cli['id'] as String,
-        firstName: cli['firstName'] as String,
-        lastName: cli['lastName'] as String,
-        avatarUrl: cli['avatarUrl'] as String?,
+        id: cli?['id'] as String? ?? '',
+        firstName: cli?['firstName'] as String? ?? '',
+        lastName: cli?['lastName'] as String? ?? '',
+        avatarUrl: cli?['avatarUrl'] as String?,
       ),
       bidCount: (j['bidCount'] as num?)?.toInt() ?? 0,
       distanceKm: (j['distanceKm'] as num?)?.toDouble(),

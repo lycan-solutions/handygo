@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import { Role, User } from '@prisma/client';
+import { Role, User, VerificationStatus, WorkerStatus } from '@prisma/client';
 
 @Injectable()
 export class AuthRepository {
@@ -39,11 +39,15 @@ export class AuthRepository {
           },
         });
       } else if (data.role === Role.WORKER) {
+        // Auto-approve for MVP — no admin panel exists in Phase 1.
+        // Workers are immediately ACTIVE + VERIFIED so they can see and bid on jobs.
         await tx.workerProfile.create({
           data: {
             userId: user.id,
             firstName: data.firstName,
             lastName: data.lastName,
+            status: WorkerStatus.ACTIVE,
+            verificationStatus: VerificationStatus.VERIFIED,
           },
         });
       }

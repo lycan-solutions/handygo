@@ -32,12 +32,15 @@ String? imagePathForCategory(String backendName) {
     'electrician'               => 'assets/images/electrician.jpg',
     'plumber'                   => 'assets/images/plumber.jpg',
     'handyman'                  => 'assets/images/handyman.jpg',
-    'cleaning'                  => 'assets/images/Cleaning.jpg',
-    'painter'                   => 'assets/images/Painter.jpg',
-    'carpenter'                 => 'assets/images/Carpenter.jpg',
-    'pest control'              => 'assets/images/Pest.jpg',
-    'car wash'                  => 'assets/images/Carwash.jpg',
-    'gardener'                  => 'assets/images/Gardener.jpg',
+    // 'cleaner' is the migration-seeded backend name for the cleaning service
+    'cleaner'                   => 'assets/images/cleaner.png',
+    // 'cleaning' kept as fallback alias if root seed was run
+    'cleaning'                  => 'assets/images/cleaner.png',
+    'painter'                   => 'assets/images/painting.jpg',
+    'carpenter'                 => 'assets/images/carpenter.jpg',
+    'pest control'              => 'assets/images/pest.png',
+    'car wash'                  => 'assets/images/carwash.png',
+    'gardener'                  => 'assets/images/gardening.jpg',
     _                           => null,
   };
 }
@@ -45,51 +48,51 @@ String? imagePathForCategory(String backendName) {
 // Returns emoji for a given backend category name (normalized).
 String emojiForCategory(String backendName) {
   return switch (backendName.toLowerCase()) {
-    'ac technician'  => '❄️',
-    'electrician'    => '⚡',
-    'plumber'        => '🔧',
-    'handyman'       => '🔨',
-    'cleaning'       => '🧹',
-    'painter'        => '🎨',
-    'carpenter'      => '🪚',
-    'pest control'   => '🐛',
-    'car wash'       => '🚗',
-    'gardener'       => '🌿',
-    _                => '🛠️',
+    'ac technician'          => '❄️',
+    'electrician'            => '⚡',
+    'plumber'                => '🔧',
+    'handyman'               => '🔨',
+    'cleaner' || 'cleaning'  => '🧹',
+    'painter'                => '🎨',
+    'carpenter'              => '🪚',
+    'pest control'           => '🐛',
+    'car wash'               => '🚗',
+    'gardener'               => '🌿',
+    _                        => '🛠️',
   };
 }
 
 // Returns background color for a given backend category name.
 Color bgColorForCategory(String backendName) {
   return switch (backendName.toLowerCase()) {
-    'ac technician'  => const Color(0xFFE8F4F8),
-    'electrician'    => const Color(0xFFFFF8E1),
-    'plumber'        => const Color(0xFFE8F5E9),
-    'handyman'       => const Color(0xFFF3E5F5),
-    'cleaning'       => const Color(0xFFFFF3E0),
-    'painter'        => const Color(0xFFFCE4EC),
-    'carpenter'      => const Color(0xFFEFEBE9),
-    'pest control'   => const Color(0xFFE8F5E9),
-    'car wash'       => const Color(0xFFE3F2FD),
-    'gardener'       => const Color(0xFFE8F5E9),
-    _                => const Color(0xFFF0F0F0),
+    'ac technician'          => const Color(0xFFE8F4F8),
+    'electrician'            => const Color(0xFFFFF8E1),
+    'plumber'                => const Color(0xFFE8F5E9),
+    'handyman'               => const Color(0xFFF3E5F5),
+    'cleaner' || 'cleaning'  => const Color(0xFFFFF3E0),
+    'painter'                => const Color(0xFFFCE4EC),
+    'carpenter'              => const Color(0xFFEFEBE9),
+    'pest control'           => const Color(0xFFE8F5E9),
+    'car wash'               => const Color(0xFFE3F2FD),
+    'gardener'               => const Color(0xFFE8F5E9),
+    _                        => const Color(0xFFF0F0F0),
   };
 }
 
 // Returns emoji background color for a given backend category name.
 Color emojiBgForCategory(String backendName) {
   return switch (backendName.toLowerCase()) {
-    'ac technician'  => const Color(0xFFB2DFF0),
-    'electrician'    => const Color(0xFFFFECB3),
-    'plumber'        => const Color(0xFFC8E6C9),
-    'handyman'       => const Color(0xFFE1BEE7),
-    'cleaning'       => const Color(0xFFFFE0B2),
-    'painter'        => const Color(0xFFF8BBD0),
-    'carpenter'      => const Color(0xFFD7CCC8),
-    'pest control'   => const Color(0xFFC8E6C9),
-    'car wash'       => const Color(0xFFBBDEFB),
-    'gardener'       => const Color(0xFFA5D6A7),
-    _                => const Color(0xFFDDDDDD),
+    'ac technician'          => const Color(0xFFB2DFF0),
+    'electrician'            => const Color(0xFFFFECB3),
+    'plumber'                => const Color(0xFFC8E6C9),
+    'handyman'               => const Color(0xFFE1BEE7),
+    'cleaner' || 'cleaning'  => const Color(0xFFFFE0B2),
+    'painter'                => const Color(0xFFF8BBD0),
+    'carpenter'              => const Color(0xFFD7CCC8),
+    'pest control'           => const Color(0xFFC8E6C9),
+    'car wash'               => const Color(0xFFBBDEFB),
+    'gardener'               => const Color(0xFFA5D6A7),
+    _                        => const Color(0xFFDDDDDD),
   };
 }
 
@@ -97,17 +100,17 @@ Color emojiBgForCategory(String backendName) {
 // New backend categories not listed here fall into "More Services".
 String sectionForCategory(String backendName) {
   return switch (backendName.toLowerCase()) {
-    'ac technician'  => 'Beat the Karachi Heat',
-    'pest control'   => 'Beat the Karachi Heat',
-    'handyman'       => 'New Home Essentials',
-    'cleaning'       => 'New Home Essentials',
-    'painter'        => 'New Home Essentials',
-    'plumber'        => 'Home Improvement Help',
-    'electrician'    => 'Home Improvement Help',
-    'carpenter'      => 'Home Improvement Help',
-    'gardener'       => 'Keep Your Home Running',
-    'car wash'       => 'Keep Your Home Running',
-    _                => 'More Services',
+    'ac technician'          => 'Beat the Karachi Heat',
+    'pest control'           => 'Beat the Karachi Heat',
+    'handyman'               => 'New Home Essentials',
+    'cleaner' || 'cleaning'  => 'New Home Essentials',
+    'painter'                => 'New Home Essentials',
+    'plumber'                => 'Home Improvement Help',
+    'electrician'            => 'Home Improvement Help',
+    'carpenter'              => 'Home Improvement Help',
+    'gardener'               => 'Keep Your Home Running',
+    'car wash'               => 'Keep Your Home Running',
+    _                        => 'More Services',
   };
 }
 
@@ -176,7 +179,7 @@ const kServiceCategories = [
         emoji: '🐛',
         bg: Color(0xFFE8F5E9),
         emojiBg: Color(0xFFC8E6C9),
-        imagePath: 'assets/images/Pest.jpg',
+        imagePath: 'assets/images/pest.png',
       ),
     ],
   ),
@@ -193,19 +196,19 @@ const kServiceCategories = [
       ),
       ServiceItem(
         title: 'Deep Cleaning',
-        backendName: 'Cleaning',
+        backendName: 'Cleaner',
         emoji: '🧹',
         bg: Color(0xFFFFF3E0),
         emojiBg: Color(0xFFFFE0B2),
-        imagePath: 'assets/images/Cleaning.jpg',
+        imagePath: 'assets/images/deepcleaning.png',
       ),
       ServiceItem(
-        title: 'Painting',
+        title: 'Paint / Painter',
         backendName: 'Painter',
         emoji: '🎨',
         bg: Color(0xFFFCE4EC),
         emojiBg: Color(0xFFF8BBD0),
-        imagePath: 'assets/images/Painter.jpg',
+        imagePath: 'assets/images/painting.jpg',
       ),
     ],
   ),
@@ -234,7 +237,7 @@ const kServiceCategories = [
         emoji: '🪚',
         bg: Color(0xFFEFEBE9),
         emojiBg: Color(0xFFD7CCC8),
-        imagePath: 'assets/images/Carpenter.jpg',
+        imagePath: 'assets/images/carpenter.jpg',
       ),
     ],
   ),
@@ -247,7 +250,7 @@ const kServiceCategories = [
         emoji: '🌿',
         bg: Color(0xFFE8F5E9),
         emojiBg: Color(0xFFA5D6A7),
-        imagePath: 'assets/images/Gardener.jpg',
+        imagePath: 'assets/images/gardening.jpg',
       ),
       ServiceItem(
         title: 'Car Wash',
@@ -255,7 +258,7 @@ const kServiceCategories = [
         emoji: '🚗',
         bg: Color(0xFFE3F2FD),
         emojiBg: Color(0xFFBBDEFB),
-        imagePath: 'assets/images/Carwash.jpg',
+        imagePath: 'assets/images/carwash.png',
       ),
     ],
   ),

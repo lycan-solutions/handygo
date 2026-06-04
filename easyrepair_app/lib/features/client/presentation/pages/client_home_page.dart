@@ -48,11 +48,25 @@ final _currentAreaProvider = FutureProvider<String>((ref) async {
   }
 });
 
-class ClientHomePage extends ConsumerWidget {
+class ClientHomePage extends ConsumerStatefulWidget {
   const ClientHomePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ClientHomePage> createState() => _ClientHomePageState();
+}
+
+class _ClientHomePageState extends ConsumerState<ClientHomePage> {
+  final _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final authState = ref.watch(authStateProvider);
     final user = authState.valueOrNull;
     final firstName = user?.firstName ?? 'there';
@@ -228,37 +242,36 @@ class ClientHomePage extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     // ── Compact greeting + search pill ────────────────────
-                    GestureDetector(
-                      onTap: () => context.push('/client/post-job'),
-                      child: Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(50),
+                        border: Border.all(
+                          color: const Color(0xFFE2E8F0),
+                          width: 1,
                         ),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(50),
-                          border: Border.all(
-                            color: const Color(0xFFE2E8F0),
-                            width: 1,
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.04),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Row(
-                          children: [
-                            const Icon(
-                              Icons.search_rounded,
-                              color: _kGreen,
-                              size: 20,
-                            ),
-                            const SizedBox(width: 8),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.search_rounded,
+                            color: _kGreen,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          if (_searchQuery.isEmpty) ...[
                             Text(
                               'Hi $firstName 👋',
                               style: TextStyle(
@@ -273,19 +286,43 @@ class ClientHomePage extends ConsumerWidget {
                               height: 14,
                               color: const Color(0xFFE2E8F0),
                             ),
-                            Expanded(
-                              child: Text(
-                                'Try "AC not cooling" ...',
-                                style: TextStyle(
+                          ],
+                          Expanded(
+                            child: TextField(
+                              controller: _searchController,
+                              onChanged: (v) =>
+                                  setState(() => _searchQuery = v.trim()),
+                              style: TextStyle(
+                                fontSize: rFont(screenWidth, 13, min: 11, max: 14),
+                                color: _kDark,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: _searchQuery.isEmpty
+                                    ? 'Search services...'
+                                    : null,
+                                hintStyle: TextStyle(
                                   fontSize: rFont(screenWidth, 12, min: 11, max: 13),
                                   color: const Color(0xFF94A3B8),
                                 ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
+                                border: InputBorder.none,
+                                isDense: true,
+                                contentPadding: EdgeInsets.zero,
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                          if (_searchQuery.isNotEmpty)
+                            GestureDetector(
+                              onTap: () {
+                                _searchController.clear();
+                                setState(() => _searchQuery = '');
+                              },
+                              child: const Icon(
+                                Icons.close_rounded,
+                                size: 18,
+                                color: _kGray,
+                              ),
+                            ),
+                        ],
                       ),
                     ),
 
@@ -297,24 +334,15 @@ class ClientHomePage extends ConsumerWidget {
                         final backendCategories =
                             cRef.watch(allCategoriesProvider).valueOrNull ?? [];
 
-                        // Build a set of backend names for fast availability check.
-                        final availableNames = <String>{
-                          for (final c in backendCategories)
-                            c.name.toLowerCase(),
-                        };
-
-                        // Helper: build items for a planned section, marking
-                        // availability from backend. Also collect "extra" backend
-                        // categories not in the planned list for "More Services".
+                        // Helper: build items for a planned section.
+                        // Also collect "extra" backend categories not in the
+                        // planned list for "More Services".
                         final plannedBackendNames = <String>{};
 
                         List<_HomeServiceItem> itemsFor(
                             List<ServiceItem> planned) {
                           return planned.map((s) {
                             plannedBackendNames.add(s.backendName.toLowerCase());
-                            final available = availableNames.isEmpty ||
-                                availableNames
-                                    .contains(s.backendName.toLowerCase());
                             return _HomeServiceItem(
                               displayTitle: s.title,
                               backendName: s.backendName,
@@ -322,7 +350,6 @@ class ClientHomePage extends ConsumerWidget {
                               bg: s.bg,
                               emojiBg: s.emojiBg,
                               imagePath: s.imagePath,
-                              isAvailable: available,
                             );
                           }).toList();
                         }
@@ -337,9 +364,13 @@ class ClientHomePage extends ConsumerWidget {
                         ];
 
                         // Collect unknown backend categories → "More Services".
+                        // Exclude generic "Cleaning" since Deep Cleaning already covers it.
                         final extras = backendCategories
-                            .where((c) => !plannedBackendNames
-                                .contains(c.name.toLowerCase()))
+                            .where((c) =>
+                                !plannedBackendNames
+                                    .contains(c.name.toLowerCase()) &&
+                                c.name.toLowerCase() != 'cleaning' &&
+                                c.name.toLowerCase() != 'cleaner')
                             .map((c) => _HomeServiceItem(
                                   displayTitle: c.name,
                                   backendName: c.name,
@@ -347,7 +378,6 @@ class ClientHomePage extends ConsumerWidget {
                                   bg: bgColorForCategory(c.name),
                                   emojiBg: emojiBgForCategory(c.name),
                                   imagePath: imagePathForCategory(c.name),
-                                  isAvailable: true,
                                 ))
                             .toList();
 
@@ -359,22 +389,43 @@ class ClientHomePage extends ConsumerWidget {
                         }
 
                         void onTap(_HomeServiceItem item) {
-                          if (item.isAvailable) {
-                            context.push(
-                              '/client/post-job?service='
-                              '${Uri.encodeComponent(item.backendName)}',
-                            );
-                          } else {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  '${item.displayTitle} — coming soon!',
+                          context.push(
+                            '/client/post-job?service='
+                            '${Uri.encodeComponent(item.backendName)}',
+                          );
+                        }
+
+                        // ── Search filtering ───────────────────────────────
+                        final q = _searchQuery.toLowerCase();
+                        if (q.isNotEmpty) {
+                          final matched = [
+                            for (final sec in sections)
+                              for (final item in sec.items)
+                                if (item.displayTitle.toLowerCase().contains(q) ||
+                                    item.backendName.toLowerCase().contains(q))
+                                  item,
+                          ];
+
+                          if (matched.isEmpty) {
+                            return const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 32),
+                              child: Center(
+                                child: Text(
+                                  'No services found',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Color(0xFF94A3B8),
+                                  ),
                                 ),
-                                behavior: SnackBarBehavior.floating,
-                                duration: const Duration(seconds: 2),
                               ),
                             );
                           }
+
+                          return _ServiceSection(
+                            heading: 'Search Results',
+                            items: matched,
+                            onItemTap: onTap,
+                          );
                         }
 
                         return Column(
@@ -415,7 +466,6 @@ class _HomeServiceItem {
   final Color bg;
   final Color emojiBg;
   final String? imagePath;
-  final bool isAvailable;
 
   const _HomeServiceItem({
     required this.displayTitle,
@@ -424,7 +474,6 @@ class _HomeServiceItem {
     required this.bg,
     required this.emojiBg,
     this.imagePath,
-    this.isAvailable = true,
   });
 }
 
@@ -488,17 +537,14 @@ class _ServiceSection extends StatelessWidget {
                   child: SizedBox(
                     width: cardW,
                     height: cardH,
-                    child: Opacity(
-                      opacity: s.isAvailable ? 1.0 : 0.55,
-                      child: ServiceCard(
-                        title: s.displayTitle,
-                        emoji: s.emoji,
-                        backgroundColor: s.bg,
-                        emojiBackgroundColor: s.emojiBg,
-                        imagePath: s.imagePath,
-                        useImageStyle: true,
-                        onTap: () => onItemTap(s),
-                      ),
+                    child: ServiceCard(
+                      title: s.displayTitle,
+                      emoji: s.emoji,
+                      backgroundColor: s.bg,
+                      emojiBackgroundColor: s.emojiBg,
+                      imagePath: s.imagePath,
+                      useImageStyle: true,
+                      onTap: () => onItemTap(s),
                     ),
                   ),
                 );
@@ -583,11 +629,11 @@ class _CompactNotifTile extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
           decoration: BoxDecoration(
-            color: isUnread ? const Color(0xFFF0FDF4) : Colors.white,
+            color: isUnread ? const Color(0xFFFFF7F4) : const Color(0xFFFAF9F8),
             borderRadius: BorderRadius.circular(14),
             border: Border.all(
               color: isUnread
-                  ? _kGreen.withValues(alpha: 0.2)
+                  ? _kGreen.withValues(alpha: 0.45)
                   : const Color(0xFFE2E8F0),
             ),
           ),
@@ -598,7 +644,7 @@ class _CompactNotifTile extends StatelessWidget {
                 height: 34,
                 decoration: BoxDecoration(
                   color: isUnread
-                      ? _kGreen.withValues(alpha: 0.12)
+                      ? _kGreen.withValues(alpha: 0.14)
                       : const Color(0xFFF1F5F9),
                   shape: BoxShape.circle,
                 ),

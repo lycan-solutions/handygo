@@ -17,6 +17,7 @@ import '../features/chat/presentation/providers/chat_providers.dart';
 import '../features/notifications/data/datasources/notification_remote_datasource.dart';
 import '../features/notifications/data/repositories/notification_repository_impl.dart';
 import '../features/notifications/presentation/providers/notification_providers.dart';
+import '../features/worker/presentation/providers/worker_job_providers.dart';
 
 class EasyRepairApp extends ConsumerStatefulWidget {
   const EasyRepairApp({super.key});
@@ -125,6 +126,17 @@ class _EasyRepairAppState extends ConsumerState<EasyRepairApp>
     ref.invalidate(notificationsProvider);
     ref.invalidate(unreadNotificationCountProvider);
 
+    // If a new_job notification arrives while a worker has the app open,
+    // immediately refresh the New Jobs tab so the job appears without waiting
+    // for the 30-second auto-poll.
+    final eventKey = message.data['eventKey'] as String?;
+    if (eventKey == 'new_job') {
+      final user = ref.read(authStateProvider).valueOrNull;
+      if (user?.isWorker == true) {
+        ref.invalidate(newJobsProvider);
+      }
+    }
+
     // On Android, FCM does NOT show a system-tray notification while the app
     // is in the foreground — show a local notification to fill that gap.
     // On iOS, setForegroundNotificationPresentationOptions handles visibility.
@@ -154,6 +166,12 @@ class _EasyRepairAppState extends ConsumerState<EasyRepairApp>
     Map<String, dynamic> data, {
     required bool isWorker,
   }) {
+    // When a worker taps a new_job notification, refresh the New Jobs feed
+    // so it is up-to-date when they return to that tab.
+    if (isWorker && (data['eventKey'] as String?) == 'new_job') {
+      ref.invalidate(newJobsProvider);
+    }
+
     final router = ref.read(routerProvider);
     NotificationNavigator.navigateByRouter(router, data, isWorker: isWorker);
 

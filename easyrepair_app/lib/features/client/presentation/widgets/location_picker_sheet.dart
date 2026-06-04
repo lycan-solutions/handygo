@@ -13,7 +13,7 @@ const _kKarachiCenter = LatLng(24.8607, 67.0011);
 const _kKarachiRadiusM = 55000.0; // 55 km
 
 // ── Palette ───────────────────────────────────────────────────────────────────
-const _kOrange  = Color(0xFF1D9E75);
+const _kOrange  = Color(0xFFDB6234);
 const _kDark    = Color(0xFF1A1A1A);
 const _kGray    = Color(0xFF6B7280);
 const _kBorder  = Color(0xFFE2E8F0);
@@ -568,22 +568,24 @@ class _LocationPickerSheetState extends State<_LocationPickerSheet> {
     return Stack(
       children: [
         // ── Map ─────────────────────────────────────────────────────────────
-        GoogleMap(
-          initialCameraPosition: CameraPosition(target: initial, zoom: 14),
-          onMapCreated          : (ctrl) => _mapCtrl = ctrl,
-          onTap                 : _onMapTap,
-          onCameraMove          : _onCameraMove,
-          onCameraIdle          : _onCameraIdle,
-          markers               : const {},
-          mapType               : MapType.normal,
-          myLocationEnabled     : true,
-          myLocationButtonEnabled: false,
-          zoomControlsEnabled   : false,
-          mapToolbarEnabled     : false,
-          buildingsEnabled      : true,
-          tiltGesturesEnabled   : false,
-          rotateGesturesEnabled : false,
-          compassEnabled        : false,
+        Positioned.fill(
+          child: GoogleMap(
+            initialCameraPosition: CameraPosition(target: initial, zoom: 14),
+            onMapCreated          : (ctrl) => _mapCtrl = ctrl,
+            onTap                 : _onMapTap,
+            onCameraMove          : _onCameraMove,
+            onCameraIdle          : _onCameraIdle,
+            markers               : const {},
+            mapType               : MapType.normal,
+            myLocationEnabled     : true,
+            myLocationButtonEnabled: false,
+            zoomControlsEnabled   : false,
+            mapToolbarEnabled     : false,
+            buildingsEnabled      : true,
+            tiltGesturesEnabled   : false,
+            rotateGesturesEnabled : false,
+            compassEnabled        : false,
+          ),
         ),
 
         // ── Center-pin overlay ───────────────────────────────────────────────

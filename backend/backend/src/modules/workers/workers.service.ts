@@ -114,6 +114,20 @@ export class WorkersService {
       throw new BadRequestException('Location is required when going online');
     }
 
+    // MVP: auto-approve existing workers who go online and are still INACTIVE/PENDING.
+    // New registrations are already set to ACTIVE+VERIFIED but this handles workers
+    // who registered before this fix was deployed.
+    if (
+      dto.status === AvailabilityStatus.ONLINE &&
+      (profile.status !== 'ACTIVE' || profile.verificationStatus !== 'VERIFIED')
+    ) {
+      await this.workersRepository.autoApprove(profile.id);
+      this.logger.log(
+        `[updateAvailability] auto-approved workerProfileId=${profile.id} ` +
+        `(was status=${profile.status} verificationStatus=${profile.verificationStatus})`,
+      );
+    }
+
     // Capture the previous status BEFORE the DB update so we can detect a
     // true OFFLINE → ONLINE transition vs. a repeated ONLINE refresh.
     const previousStatus = profile.availabilityStatus;

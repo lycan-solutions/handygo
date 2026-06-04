@@ -49,12 +49,10 @@ class WorkerBidPage extends ConsumerStatefulWidget {
 
 class _WorkerBidPageState extends ConsumerState<WorkerBidPage> {
   final _amountCtrl  = TextEditingController();
-  final _messageCtrl = TextEditingController();
 
   @override
   void dispose() {
     _amountCtrl.dispose();
-    _messageCtrl.dispose();
     super.dispose();
   }
 
@@ -77,8 +75,12 @@ class _WorkerBidPageState extends ConsumerState<WorkerBidPage> {
       return;
     }
     final amount = double.tryParse(amtStr);
-    if (amount == null || amount <= 0) {
-      _showSnack('Enter a valid amount greater than 0.', error: true);
+    if (amount == null || amount < 100) {
+      _showSnack('Bid amount must be between 100 and 500,000.', error: true);
+      return;
+    }
+    if (amount > 500000) {
+      _showSnack('Bid amount must be between 100 and 500,000.', error: true);
       return;
     }
 
@@ -87,9 +89,6 @@ class _WorkerBidPageState extends ConsumerState<WorkerBidPage> {
       await ref.read(submitBidProvider.notifier).submit(
             bookingId: widget.jobId,
             amount: amount,
-            message: _messageCtrl.text.trim().isEmpty
-                ? null
-                : _messageCtrl.text.trim(),
           );
       _showSnack('Bid submitted!');
       // Refresh own-bid, live feed, and new-jobs list (bid count changes).
@@ -206,7 +205,6 @@ class _WorkerBidPageState extends ConsumerState<WorkerBidPage> {
           // ── Bid form ──────────────────────────────────────────────────────
           _BidForm(
             amountCtrl: _amountCtrl,
-            messageCtrl: _messageCtrl,
             isSubmitting: isSubmitting,
             existingBid: myBidAsync.valueOrNull,
             onSubmit: _submit,
@@ -456,14 +454,12 @@ class _CurrentBidCard extends StatelessWidget {
 
 class _BidForm extends StatelessWidget {
   final TextEditingController amountCtrl;
-  final TextEditingController messageCtrl;
   final bool isSubmitting;
   final BidEntity? existingBid;
   final VoidCallback onSubmit;
 
   const _BidForm({
     required this.amountCtrl,
-    required this.messageCtrl,
     required this.isSubmitting,
     required this.existingBid,
     required this.onSubmit,
@@ -510,17 +506,6 @@ class _BidForm extends StatelessWidget {
               ],
               decoration: _inputDec(hint: 'e.g. 2500'),
               style: const TextStyle(fontSize: 15, color: _kDark),
-            ),
-          ),
-          const SizedBox(height: 12),
-          _FormField(
-            label: 'Message (optional)',
-            child: TextField(
-              controller: messageCtrl,
-              maxLines: 3,
-              maxLength: 300,
-              decoration: _inputDec(hint: 'Describe your approach or relevant details...'),
-              style: const TextStyle(fontSize: 14, color: _kDark),
             ),
           ),
           const SizedBox(height: 16),

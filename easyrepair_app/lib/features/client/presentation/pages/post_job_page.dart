@@ -677,6 +677,7 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
   }
 
   Future<void> _submitCreate(String address) async {
+    debugPrint('[BookingSubmit] serviceCategory="$_selectedService"');
     final request = CreateBookingRequest(
       serviceCategory: _selectedService!,
       urgency: _isUrgent ? BookingUrgency.urgent : BookingUrgency.normal,
@@ -928,11 +929,17 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
   // Returns null for unknown services, which falls back to emoji layout in ServiceCard.
   String? _serviceImagePath(String name) {
     return switch (name.toLowerCase()) {
-      'ac technician' => 'assets/images/ac.jpg',
-      'electrician' => 'assets/images/electrician.jpg',
-      'plumber' => 'assets/images/plumber.jpg',
-      'handyman' => 'assets/images/handyman.jpg',
-      _ => null,
+      'ac technician'          => 'assets/images/ac.jpg',
+      'electrician'            => 'assets/images/electrician.jpg',
+      'plumber'                => 'assets/images/plumber.jpg',
+      'handyman'               => 'assets/images/handyman.jpg',
+      'cleaner' || 'cleaning'  => 'assets/images/deepcleaning.png',
+      'painter'                => 'assets/images/painting.jpg',
+      'carpenter'              => 'assets/images/carpenter.jpg',
+      'pest control'           => 'assets/images/pest.png',
+      'car wash'               => 'assets/images/carwash.png',
+      'gardener'               => 'assets/images/gardening.jpg',
+      _                        => null,
     };
   }
 

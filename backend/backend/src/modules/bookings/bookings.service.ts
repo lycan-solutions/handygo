@@ -109,8 +109,64 @@ export class BookingsService {
       scheduledAt,
     });
 
-    this.logger.log(`[createBooking] created bookingId=${booking.id}`);
+    this.logger.log(
+      `[BookingCreated] bookingId=${booking.id} status=${booking.status} ` +
+      `urgency=${booking.urgency} categoryId=${booking.categoryId} ` +
+      `lat=${booking.latitude} lng=${booking.longitude} ` +
+      `addressLine="${booking.addressLine}" city="${booking.city}"`,
+    );
+
+    // Fire-and-forget: notify all eligible online workers within 20km.
+    void this._notifyNearbyWorkers(booking);
+
     return this._toDto(booking);
+  }
+
+  /**
+   * Fire-and-forget: find all eligible online workers within 20km and send
+   * a NEW_JOB push notification to each. Never throws — any failure is logged.
+   */
+  private async _notifyNearbyWorkers(booking: {
+    id: string;
+    categoryId: string;
+    latitude: number;
+    longitude: number;
+    title: string | null;
+    urgency: BookingUrgency;
+  }): Promise<void> {
+    try {
+      const workers = await this.bookingsRepository.findEligibleOnlineWorkers({
+        categoryId: booking.categoryId,
+        lat: booking.latitude,
+        lng: booking.longitude,
+        radiusKm: 20,
+      });
+
+      this.logger.log(
+        `[NearbyWorkersFound] bookingId=${booking.id} eligibleWorkerCount=${workers.length}`,
+      );
+
+      const label = booking.urgency === BookingUrgency.URGENT ? 'Urgent job' : 'New job';
+      const title = `${label} available nearby`;
+      const body = booking.title
+        ? `"${booking.title}" — tap to view and bid`
+        : `A new job is available near you — tap to view and bid`;
+
+      for (const worker of workers) {
+        void this.notificationsService.notify({
+          userId: worker.userId,
+          eventKey: 'new_job',
+          title,
+          body,
+          bookingId: booking.id,
+          route: `/worker/job/${booking.id}`,
+          entityType: 'booking',
+          entityId: booking.id,
+        });
+      }
+    } catch (err) {
+      this.logger.warn(`[_notifyNearbyWorkers] bookingId=${booking.id} error: ${err}`);
+    }
   }
 
   async getClientBookings(userId: string): Promise<BookingResponseDto[]> {

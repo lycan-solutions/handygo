@@ -80,7 +80,7 @@ class _WorkerDiscoveryMapPageState extends ConsumerState<WorkerDiscoveryMapPage>
   }
 
   Set<Marker> _buildMarkers(
-    LatLng jobPos,
+    LatLng? jobPos,
     List<BidWithWorkerEntity> pending,
   ) {
     // Only rebuild when bids actually changed.
@@ -90,27 +90,24 @@ class _WorkerDiscoveryMapPageState extends ConsumerState<WorkerDiscoveryMapPage>
     }
     _prevPendingBids = pending;
 
-    final markers = <Marker>{
-      Marker(
+    final markers = <Marker>{};
+
+    if (jobPos != null) {
+      markers.add(Marker(
         markerId: const MarkerId('job'),
         position: jobPos,
         infoWindow: InfoWindow(
           title: 'Job Location',
           snippet: widget.booking.address ?? widget.booking.city,
         ),
-      ),
-    };
+      ));
+    }
 
-    int count = 0;
     for (final bw in pending) {
       if (bw.currentLat == null || bw.currentLng == null) {
-        if (_loggedMissingLocationWorkers.add(bw.workerProfileId)) {
-          debugPrint(
-              '[WorkerOffersMap] missing location for worker = ${bw.workerProfileId}');
-        }
+        _loggedMissingLocationWorkers.add(bw.workerProfileId);
         continue;
       }
-      count++;
       markers.add(
         Marker(
           markerId: MarkerId('worker_${bw.workerProfileId}'),
@@ -123,7 +120,6 @@ class _WorkerDiscoveryMapPageState extends ConsumerState<WorkerDiscoveryMapPage>
         ),
       );
     }
-    debugPrint('[WorkerOffersMap] worker markers count = $count');
     _cachedMarkers = markers;
     return markers;
   }
@@ -140,9 +136,14 @@ class _WorkerDiscoveryMapPageState extends ConsumerState<WorkerDiscoveryMapPage>
 
   @override
   Widget build(BuildContext context) {
+    final safeTop = MediaQuery.of(context).padding.top;
+
     final jobLat = widget.booking.latitude;
     final jobLng = widget.booking.longitude;
-    final jobPos = LatLng(jobLat, jobLng);
+    final hasLocation = jobLat != 0 || jobLng != 0;
+    final jobPos = hasLocation
+        ? LatLng(jobLat, jobLng)
+        : const LatLng(24.8607, 67.0011);
 
     final bidsAsync = ref.watch(bookingBidsProvider(widget.booking.id));
     final pendingBids = bidsAsync.whenOrNull(
@@ -152,77 +153,112 @@ class _WorkerDiscoveryMapPageState extends ConsumerState<WorkerDiscoveryMapPage>
         ) ??
         [];
 
-    final markers = _buildMarkers(jobPos, pendingBids);
-    final circles = _buildCircles(jobPos);
+    final markers = _buildMarkers(hasLocation ? jobPos : null, pendingBids);
+    final circles = hasLocation ? _buildCircles(jobPos) : <Circle>{};
+
+    // Debug: confirm full-screen constraints are received.
+    final screenSize = MediaQuery.of(context).size;
+    debugPrint('[WorkerBidsMap] screen=${screenSize.width}x${screenSize.height}');
+
+    final Widget mapWidget = GoogleMap(
+      initialCameraPosition:
+          CameraPosition(target: jobPos, zoom: hasLocation ? 13.5 : 11.0),
+      onMapCreated: (c) => _mapCtrl = c,
+      markers: markers,
+      circles: circles,
+      myLocationButtonEnabled: false,
+      zoomControlsEnabled: false,
+      mapToolbarEnabled: false,
+    );
 
     return Scaffold(
       body: Stack(
+        // StackFit.expand forces every non-Positioned child to fill the Stack,
+        // which is what gives DraggableScrollableSheet(expand:false) the full
+        // screen height it needs to calculate childSize percentages correctly.
+        fit: StackFit.expand,
         children: [
-          // ── Full-screen map with static circles fixed to job coordinates ──
-          GoogleMap(
-            initialCameraPosition: CameraPosition(target: jobPos, zoom: 13.5),
-            onMapCreated: (c) => _mapCtrl = c,
-            markers: markers,
-            circles: circles,
-            myLocationButtonEnabled: false,
-            zoomControlsEnabled: false,
-            mapToolbarEnabled: false,
-          ),
+          // ── Full-screen map ────────────────────────────────────────────────
+          Positioned.fill(child: mapWidget),
+
+          // ── No location banner ─────────────────────────────────────────────
+          if (!hasLocation)
+            Positioned(
+              top: safeTop + 12,
+              left: 60,
+              right: 16,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(10),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+                child: const Text(
+                  'Job location not available',
+                  style: TextStyle(fontSize: 12, color: _kGray),
+                ),
+              ),
+            ),
 
           // ── Back button ────────────────────────────────────────────────────
-          SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Material(
-                color: Colors.white,
-                shape: const CircleBorder(),
-                elevation: 2,
-                child: InkWell(
-                  customBorder: const CircleBorder(),
-                  onTap: () => Navigator.of(context).pop(),
-                  child: const Padding(
-                    padding: EdgeInsets.all(10),
-                    child: Icon(Icons.arrow_back_ios_new_rounded, size: 16, color: _kDark),
-                  ),
+          Positioned(
+            top: safeTop + 8,
+            left: 12,
+            child: Material(
+              color: Colors.white,
+              shape: const CircleBorder(),
+              elevation: 2,
+              child: InkWell(
+                customBorder: const CircleBorder(),
+                onTap: () => Navigator.of(context).pop(),
+                child: const Padding(
+                  padding: EdgeInsets.all(10),
+                  child: Icon(Icons.arrow_back_ios_new_rounded,
+                      size: 16, color: _kDark),
                 ),
               ),
             ),
           ),
 
           // ── Draggable bottom sheet ─────────────────────────────────────────
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: DraggableScrollableSheet(
-              initialChildSize: 0.20,
-              minChildSize: 0.20,
-              maxChildSize: 0.60,
-              snap: true,
-              snapSizes: const [0.20, 0.40, 0.60],
-              expand: false,
-              builder: (ctx, scrollCtrl) {
-                return Container(
-                  width: double.infinity,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(22),
+          // Placed directly in Stack with StackFit.expand — it receives
+          // full-screen constraints and anchors itself to the bottom.
+          DraggableScrollableSheet(
+            initialChildSize: 0.20,
+            minChildSize: 0.20,
+            maxChildSize: 0.60,
+            snap: true,
+            snapSizes: const [0.20, 0.40, 0.60],
+            expand: false,
+            builder: (ctx, scrollCtrl) {
+              return Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: const BorderRadius.vertical(
+                    top: Radius.circular(22),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.12),
+                      blurRadius: 16,
+                      offset: const Offset(0, -4),
                     ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.12),
-                        blurRadius: 16,
-                        offset: const Offset(0, -4),
-                      ),
-                    ],
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: _BidsSheet(
-                    booking: widget.booking,
-                    scrollController: scrollCtrl,
-                  ),
-                );
-              },
-            ),
+                  ],
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: _BidsSheet(
+                  booking: widget.booking,
+                  scrollController: scrollCtrl,
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -317,9 +353,6 @@ class _BidsSheet extends ConsumerWidget {
                 .where((b) => b.bid.status == BidStatus.pending)
                 .toList()
               ..sort((a, b) => a.bid.amount.compareTo(b.bid.amount));
-
-            debugPrint(
-                '[WorkerOffersDrawer] bids count = ${pending.length}');
 
             if (pending.isEmpty) {
               return const SliverToBoxAdapter(child: _EmptyState());
@@ -590,8 +623,6 @@ class _BidOfferCard extends ConsumerWidget {
     );
 
     if (confirm != true || !context.mounted) return;
-
-    debugPrint('[WorkerOffersDrawer] accept bid tapped = ${bidWorker.bid.id}');
 
     try {
       await ref.read(acceptBidProvider.notifier).accept(

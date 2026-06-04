@@ -1,14 +1,17 @@
 # EasyRepair — Claude Code Context
 
 🎨 Design System (NEW)
-Primary Colors
-Primary: #1D9E75 (Brand Orange)
-Secondary: #FFFFFF (White)
+Primary: #DB6234
+Primary Dark: #C2541D
+Primary Light: #F5E8E0
+Secondary: #FFFFFF
 Text Dark: #1A1A1A
 Text Light: #6B7280
 Background: #F9FAFB
+Card Background: #FFFFFF
 Success: #22C55E
-Error: #EF4444
+Error: #EF4444R
+Warning: #F59E0B
 UI Guidelines
 Use orange (#FF5F15) for:
 Buttons

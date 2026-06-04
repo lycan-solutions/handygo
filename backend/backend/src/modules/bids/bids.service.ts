@@ -363,22 +363,32 @@ export class BidsService {
       throw new ForbiddenException('Worker profile not found');
     }
 
-    this._assertWorkerEligible(workerProfile);
+    // Log full worker state for diagnosis
+    this.logger.log(
+      `[WorkerNewJobsRequest] workerId=${workerProfile.id} status=${workerProfile.status} ` +
+      `verificationStatus=${workerProfile.verificationStatus} ` +
+      `availabilityStatus=${workerProfile.availabilityStatus} ` +
+      `currentlyWorking=${workerProfile.currentlyWorking} ` +
+      `currentLat=${workerProfile.currentLat} currentLng=${workerProfile.currentLng}`,
+    );
+
+    // Viewing available jobs does not require ACTIVE+VERIFIED — any registered
+    // worker can browse. Only SUSPENDED accounts are blocked from the feed.
+    // Full eligibility (ACTIVE+VERIFIED) is enforced when they actually submit a bid.
+    if (workerProfile.status === WorkerStatus.SUSPENDED) {
+      throw new ForbiddenException('Worker account is suspended');
+    }
 
     const categoryIds = workerProfile.skills.map((s) => s.categoryId);
 
     this.logger.log(
-      `[getNewJobsForWorker] workerId=${workerProfile.id} currentlyWorking=${workerProfile.currentlyWorking} skillCategoryIds=${JSON.stringify(categoryIds)}`,
+      `[WorkerNewJobsRequest] workerId=${workerProfile.id} skillCategoryIds=${JSON.stringify(categoryIds)}`,
     );
 
     if (categoryIds.length === 0) {
-      this.logger.log(`[getNewJobsForWorker] workerId=${workerProfile.id} — no skills set, returning []`);
+      this.logger.warn(`[WorkerNewJobsRequest] workerId=${workerProfile.id} — no skills set, returning []`);
       return [];
     }
-
-    this.logger.log(
-      `[getNewJobsForWorker] querying PENDING bookings for categoryIds=${JSON.stringify(categoryIds)}`,
-    );
 
     const bookings = await this.bidsRepository.findAvailableJobsForWorker(
       workerProfile.id,
@@ -386,10 +396,43 @@ export class BidsService {
     );
 
     this.logger.log(
-      `[getNewJobsForWorker] workerId=${workerProfile.id} — total PENDING jobs found after status+category filter: ${bookings.length}`,
+      `[WorkerNewJobsRequest] workerId=${workerProfile.id} — PENDING+unassigned jobs matching skills: ${bookings.length}`,
     );
 
-    const result = bookings.map((b) => {
+    const MAX_RADIUS_KM = 20;
+    const hasWorkerLocation =
+      workerProfile.currentLat != null && workerProfile.currentLng != null;
+
+    if (!hasWorkerLocation) {
+      this.logger.warn(
+        `[WorkerNewJobsRequest] workerId=${workerProfile.id} — no location, returning []`,
+      );
+      return [];
+    }
+
+    const result: Array<{
+      id: string;
+      title: string | null;
+      description: string;
+      status: string;
+      urgency: string;
+      timeSlot: string | null;
+      addressLine: string;
+      city: string;
+      latitude: number;
+      longitude: number;
+      scheduledAt: Date | null;
+      createdAt: Date;
+      category: { id: string; name: string; iconUrl: string | null };
+      client: { id: string; firstName: string; lastName: string; avatarUrl: string | null } | null;
+      bidCount: number;
+      distanceKm: number;
+      hasMyBid: boolean;
+      myBidUpdatedAt: Date | null;
+      workerProfileId: string | null;
+    }> = [];
+
+    for (const b of bookings) {
       const distanceKm = this._haversineKm(
         b.latitude,
         b.longitude,
@@ -401,10 +444,15 @@ export class BidsService {
       const hasMyBid = myBid !== null;
 
       this.logger.log(
-        `[getNewJobsForWorker] bookingId=${b.id} status=${b.status} categoryId=${b.categoryId} hasMyBid=${hasMyBid}`,
+        `[WorkerNewJobsRequest] bookingId=${b.id} urgency=${b.urgency} ` +
+        `distanceKm=${distanceKm} hasMyBid=${hasMyBid} ` +
+        `withinRadius=${distanceKm !== null && distanceKm <= MAX_RADIUS_KM}`,
       );
 
-      return {
+      // Skip jobs with no computable distance or beyond 20km.
+      if (distanceKm === null || distanceKm > MAX_RADIUS_KM) continue;
+
+      result.push({
         id: b.id,
         title: b.title,
         description: b.description,
@@ -418,17 +466,17 @@ export class BidsService {
         scheduledAt: b.scheduledAt,
         createdAt: b.createdAt,
         category: b.category,
-        client: b.clientProfile,
+        client: b.clientProfile ?? null,
         bidCount: b._count.bids,
         distanceKm,
         hasMyBid,
         myBidUpdatedAt: myBid?.updatedAt ?? null,
         workerProfileId: b.workerProfileId ?? null,
-      };
-    });
+      });
+    }
 
     this.logger.log(
-      `[getNewJobsForWorker] workerId=${workerProfile.id} — returning ${result.length} jobs (bidded + non-bidded)`,
+      `[WorkerNewJobsRequest] workerId=${workerProfile.id} — returning ${result.length} jobs within ${MAX_RADIUS_KM}km`,
     );
 
     return result;

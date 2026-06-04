@@ -20,7 +20,7 @@ class ServiceCategoryEntity {
       'handyman' => '🔨',
       'painter' || 'painting' => '🎨',
       'carpenter' || 'carpentry' => '🪚',
-      'cleaner' || 'cleaning' => '🧹',
+      'cleaner' || 'cleaning' || 'deep cleaning' => '🧹',
       _ => '🛠️',
     };
   }

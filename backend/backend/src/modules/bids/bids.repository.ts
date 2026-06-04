@@ -244,6 +244,7 @@ export class BidsRepository {
 
   /**
    * Find PENDING bookings that match the worker's skills.
+   * Excludes bookings that already have a worker assigned.
    * Includes all jobs regardless of whether the worker already bid.
    * Returns `myBid` so callers can compute `hasMyBid`.
    */
@@ -252,6 +253,7 @@ export class BidsRepository {
       where: {
         status: BookingStatus.PENDING,
         categoryId: { in: categoryIds },
+        workerProfileId: null,
       },
       orderBy: { createdAt: 'desc' },
       include: {

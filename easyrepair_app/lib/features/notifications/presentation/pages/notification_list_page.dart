@@ -8,7 +8,7 @@ import '../../../../../features/auth/presentation/providers/auth_providers.dart'
 import '../../domain/entities/notification_entity.dart';
 import '../providers/notification_providers.dart';
 
-const _kOrange = Color(0xFF1D9E75);
+const _kOrange = Color(0xFFDB6234);
 const _kDark   = Color(0xFF1A1A1A);
 const _kGray   = Color(0xFF6B7280);
 const _kBorder = Color(0xFFE2E8F0);
@@ -157,14 +157,15 @@ class _NotificationCard extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: isUnread ? const Color(0xFFFFF7F4) : Colors.white,
+          color: isUnread ? const Color(0xFFFFF7F4) : const Color(0xFFFAF9F8),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isUnread ? _kOrange.withOpacity(0.2) : _kBorder,
+            color: isUnread ? _kOrange.withValues(alpha: 0.45) : _kBorder,
+            width: isUnread ? 1.2 : 1.0,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.03),
+              color: Colors.black.withValues(alpha: 0.03),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -180,7 +181,7 @@ class _NotificationCard extends StatelessWidget {
               height: 36,
               decoration: BoxDecoration(
                 color: isUnread
-                    ? _kOrange.withOpacity(0.12)
+                    ? _kOrange.withValues(alpha: 0.12)
                     : const Color(0xFFF1F5F9),
                 shape: BoxShape.circle,
               ),

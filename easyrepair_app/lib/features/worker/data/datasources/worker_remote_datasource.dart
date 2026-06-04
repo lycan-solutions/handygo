@@ -51,14 +51,18 @@ class WorkerRemoteDatasourceImpl implements WorkerRemoteDatasource {
 
   @override
   Future<List<Map<String, dynamic>>> getNewJobs() async {
-    debugPrint('[NewJobs] Fetching /workers/jobs/new');
+    debugPrint('[NewJobs] → GET /workers/jobs/new');
     final response = await _dio.get<Map<String, dynamic>>('/workers/jobs/new');
-    final list = (response.data!['data'] as List<dynamic>? ?? [])
+    final data = response.data!;
+    final list = (data['data'] as List<dynamic>? ?? [])
         .cast<Map<String, dynamic>>();
-    debugPrint('[NewJobs] received count = ${list.length}');
-    if (list.isNotEmpty) {
-      debugPrint('[NewJobs] first job status = ${list.first['status']}');
-      debugPrint('[NewJobs] first job hasMyBid = ${list.first['hasMyBid']}');
+    debugPrint('[NewJobs] ← status=${response.statusCode} raw count=${list.length}');
+    for (final job in list) {
+      debugPrint(
+        '[NewJobs] job id=${job['id']} urgency=${job['urgency']} '
+        'status=${job['status']} category=${job['category']?['name']} '
+        'distanceKm=${job['distanceKm']} hasMyBid=${job['hasMyBid']}',
+      );
     }
     return list;
   }

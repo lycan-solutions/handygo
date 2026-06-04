@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { AvailabilityStatus, BookingStatus, Prisma } from '@prisma/client';
+import { AvailabilityStatus, BookingStatus, Prisma, VerificationStatus, WorkerStatus } from '@prisma/client';
 import { PrismaService } from '../../prisma/prisma.service';
 
 // ---------------------------------------------------------------------------
@@ -90,6 +90,17 @@ export class WorkersRepository {
     });
   }
 
+  /** Set worker to ACTIVE + VERIFIED for MVP (no admin panel in Phase 1). */
+  async autoApprove(workerProfileId: string): Promise<void> {
+    await this.prisma.workerProfile.update({
+      where: { id: workerProfileId },
+      data: {
+        status: WorkerStatus.ACTIVE,
+        verificationStatus: VerificationStatus.VERIFIED,
+      },
+    });
+  }
+
   /** Update availability status and optionally location. */
   async updateAvailability(
     workerProfileId: string,
@@ -138,7 +149,9 @@ export class WorkersRepository {
   /**
    * Update lat/lng only — never changes availabilityStatus.
    * Used by periodic location pings so they cannot re-online a worker that was
-   * auto-offlined. Silently no-ops if the worker is not currently ONLINE.
+   * auto-offlined. Silently no-ops if the worker is OFFLINE.
+   * Accepts ONLINE and BUSY so that assigned workers (currentlyWorking=true)
+   * continue to have their location recorded.
    */
   async updateLocationOnly(
     workerProfileId: string,
@@ -148,7 +161,7 @@ export class WorkersRepository {
     await this.prisma.workerProfile.updateMany({
       where: {
         id: workerProfileId,
-        availabilityStatus: AvailabilityStatus.ONLINE,
+        availabilityStatus: { in: [AvailabilityStatus.ONLINE, AvailabilityStatus.BUSY] },
       },
       data: {
         currentLat: lat,

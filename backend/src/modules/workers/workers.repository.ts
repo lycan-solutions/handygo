@@ -205,29 +205,95 @@ export class WorkersRepository {
     });
   }
 
-  /** Count completed and active jobs for this worker. */
-  async getJobStats(
-    workerProfileId: string,
-  ): Promise<{ completedJobs: number; activeJobs: number }> {
-    const [completedJobs, activeJobs] = await Promise.all([
-      this.prisma.booking.count({
-        where: { workerProfileId, status: BookingStatus.COMPLETED },
-      }),
-      this.prisma.booking.count({
-        where: {
-          workerProfileId,
-          status: {
-            in: [
-              BookingStatus.ACCEPTED,
-              BookingStatus.EN_ROUTE,
-              BookingStatus.IN_PROGRESS,
-            ],
-          },
-        },
-      }),
-    ]);
+  /** Count completed and active jobs, plus earnings, cancel rate, and response label. */
+  async getJobStats(workerProfileId: string): Promise<{
+    completedJobs: number;
+    activeJobs: number;
+    todayEarnings: number;
+    cancellationRate: number;
+    avgResponseMinutes: number | null;
+    responseLabel: 'Fast' | 'Normal' | 'Slow' | null;
+  }> {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
 
-    return { completedJobs, activeJobs };
+    const [completedJobs, activeJobs, todayCompleted, workerCancelled, totalAccepted, responseData] =
+      await Promise.all([
+        this.prisma.booking.count({
+          where: { workerProfileId, status: BookingStatus.COMPLETED },
+        }),
+        this.prisma.booking.count({
+          where: {
+            workerProfileId,
+            status: { in: [BookingStatus.ACCEPTED, BookingStatus.EN_ROUTE, BookingStatus.IN_PROGRESS] },
+          },
+        }),
+        // Today's completed bookings with pricing for earnings
+        this.prisma.booking.findMany({
+          where: {
+            workerProfileId,
+            status: BookingStatus.COMPLETED,
+            completedAt: { gte: todayStart },
+          },
+          select: { finalPrice: true, platformFee: true },
+        }),
+        // Worker-cancelled jobs distinguished by cancellationReason text
+        this.prisma.booking.count({
+          where: {
+            workerProfileId,
+            status: BookingStatus.CANCELLED,
+            cancellationReason: { contains: 'Cancelled by worker' },
+          },
+        }),
+        // Total jobs the worker accepted (ACCEPTED or beyond) for cancel rate denominator
+        this.prisma.booking.count({
+          where: {
+            workerProfileId,
+            status: {
+              in: [
+                BookingStatus.ACCEPTED,
+                BookingStatus.EN_ROUTE,
+                BookingStatus.IN_PROGRESS,
+                BookingStatus.COMPLETED,
+                BookingStatus.CANCELLED,
+              ],
+            },
+          },
+        }),
+        // Jobs with acceptedAt for response time calculation
+        this.prisma.booking.findMany({
+          where: { workerProfileId, acceptedAt: { not: null } },
+          select: { createdAt: true, acceptedAt: true },
+        }),
+      ]);
+
+    // Earnings = sum of (finalPrice - platformFee) for completed jobs today
+    const todayEarnings = todayCompleted.reduce((sum, b) => {
+      const earned = (b.finalPrice ?? 0) - (b.platformFee ?? 0);
+      return sum + Math.max(0, earned);
+    }, 0);
+
+    // Cancel rate rounded to nearest whole percent
+    const cancellationRate =
+      totalAccepted > 0 ? Math.round((workerCancelled / totalAccepted) * 100) : 0;
+
+    // Average response time in minutes; null when no acceptedAt data exists
+    let avgResponseMinutes: number | null = null;
+    if (responseData.length > 0) {
+      const totalMs = responseData.reduce((sum, b) => {
+        return sum + (b.acceptedAt!.getTime() - b.createdAt.getTime());
+      }, 0);
+      avgResponseMinutes = Math.round(totalMs / responseData.length / 60000);
+    }
+
+    let responseLabel: 'Fast' | 'Normal' | 'Slow' | null = null;
+    if (avgResponseMinutes !== null) {
+      if (avgResponseMinutes <= 5) responseLabel = 'Fast';
+      else if (avgResponseMinutes <= 15) responseLabel = 'Normal';
+      else responseLabel = 'Slow';
+    }
+
+    return { completedJobs, activeJobs, todayEarnings, cancellationRate, avgResponseMinutes, responseLabel };
   }
 
   /** Find the single ongoing job for this worker (if any). */

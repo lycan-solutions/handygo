@@ -17,13 +17,13 @@ class ClientBottomNavBar extends StatelessWidget {
       route: '/client/home',
     ),
     _NavTab(
-      label: 'Fixes',
+      label: 'Bookings',
       icon: Icons.assignment_turned_in_outlined,
       route: '/client/jobs',
     ),
     _NavTab(
-      label: 'Ustaads',
-      icon: Icons.engineering_outlined,
+      label: 'Chats',
+      icon: Icons.chat_bubble_outline_rounded,
       route: '/client/chat',
     ),
     _NavTab(

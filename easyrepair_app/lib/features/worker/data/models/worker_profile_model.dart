@@ -145,18 +145,40 @@ class WorkerCategoryModel {
 class WorkerStatsModel {
   final int completedJobs;
   final int activeJobs;
+  final double todayEarnings;
+  final int cancellationRate;
+  final int? avgResponseMinutes;
+  final String? responseLabel;
 
-  const WorkerStatsModel({required this.completedJobs, required this.activeJobs});
+  const WorkerStatsModel({
+    required this.completedJobs,
+    required this.activeJobs,
+    this.todayEarnings = 0,
+    this.cancellationRate = 0,
+    this.avgResponseMinutes,
+    this.responseLabel,
+  });
 
   factory WorkerStatsModel.fromJson(Map<String, dynamic> json) {
     return WorkerStatsModel(
       completedJobs: json['completedJobs'] as int? ?? 0,
       activeJobs: json['activeJobs'] as int? ?? 0,
+      todayEarnings: (json['todayEarnings'] as num?)?.toDouble() ?? 0,
+      cancellationRate: json['cancellationRate'] as int? ?? 0,
+      avgResponseMinutes: json['avgResponseMinutes'] as int?,
+      responseLabel: json['responseLabel'] as String?,
     );
   }
 
   WorkerStatsEntity toEntity() {
-    return WorkerStatsEntity(completedJobs: completedJobs, activeJobs: activeJobs);
+    return WorkerStatsEntity(
+      completedJobs: completedJobs,
+      activeJobs: activeJobs,
+      todayEarnings: todayEarnings,
+      cancellationRate: cancellationRate,
+      avgResponseMinutes: avgResponseMinutes,
+      responseLabel: responseLabel,
+    );
   }
 }
 

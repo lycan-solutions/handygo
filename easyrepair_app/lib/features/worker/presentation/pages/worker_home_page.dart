@@ -54,8 +54,11 @@ class _WorkerHomePageState extends ConsumerState<WorkerHomePage>
 
   @override
   Widget build(BuildContext context) {
-    final firstName =
+    final rawName =
         ref.watch(authStateProvider).valueOrNull?.firstName ?? 'there';
+    final firstName = rawName.isNotEmpty
+        ? rawName[0].toUpperCase() + rawName.substring(1).toLowerCase()
+        : rawName;
     final profileAsync = ref.watch(workerProfileProvider);
 
     return Scaffold(
@@ -377,8 +380,16 @@ class _HeroCard extends ConsumerWidget {
                   const SizedBox(height: 20),
                   // Earnings
                   const Text(
+                    'Aaj ki Kamai',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.white,
+                    ),
+                  ),
+                  const Text(
                     "Today's Earnings",
-                    style: TextStyle(fontSize: 11, color: Color(0xFF64748B)),
+                    style: TextStyle(fontSize: 10, color: Color(0xFF64748B)),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -582,9 +593,18 @@ class _NewJobsCta extends StatelessWidget {
         child: ElevatedButton.icon(
           onPressed: () => context.go('/worker/new-jobs'),
           icon: const Icon(Icons.work_outline_rounded, size: 18),
-          label: const Text(
-            'View New Jobs',
-            style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+          label: const Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Naya Kaam Dhondain',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+              ),
+              Text(
+                'View New Jobs',
+                style: TextStyle(fontSize: 10, fontWeight: FontWeight.w400),
+              ),
+            ],
           ),
           style: ElevatedButton.styleFrom(
             backgroundColor: _kOrange,
@@ -829,7 +849,7 @@ class _NoJobCard extends StatelessWidget {
                 ),
                 SizedBox(height: 3),
                 Text(
-                  'Stay online to receive nearby jobs.',
+                  'Online rahein, nazdeek ka kaam dhondne ke liye.',
                   style: TextStyle(fontSize: 12, color: _kGray),
                 ),
               ],

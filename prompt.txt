@@ -1,0 +1,197 @@
+Update ONLY the Worker/Ustaad Profile page wording.
+
+Work inside:
+D:\coding\handygo\easyrepair_real_git\easyrepair_app
+
+Likely files to inspect:
+
+* lib/features/worker/presentation/pages/worker_profile_page.dart
+* lib/features/worker/presentation/pages/profile_page.dart
+* lib/features/worker/presentation/widgets/*profile*.dart
+* any shared profile widgets used by worker side only
+
+Important:
+Do NOT change backend.
+Do NOT change API.
+Do NOT change auth/logout logic.
+Do NOT change delete account logic.
+Do NOT change privacy/terms routes.
+Do NOT change bottom navigation.
+Do NOT redesign the page.
+Only change visible user-facing wording on the Worker Profile page.
+
+==================================================
+PAGE TARGET
+===========
+
+This is the Worker/Ustaad Profile page.
+
+Chat page is skipped for now. Do not touch Chat page.
+
+==================================================
+CHANGES REQUIRED
+================
+
+1. Page title
+
+Keep unchanged:
+Profile
+
+Do NOT change Profile.
+
+==================================================
+2. Worker badge fix
+
+Current visible badge/text:
+Worker
+
+New:
+Ustaad
+
+Important:
+
+* This is visible UI text only.
+* Do NOT rename backend role/user type.
+* Do NOT rename internal models/classes/enums.
+* Only change what the user sees on the Profile page.
+
+==================================================
+3. General section
+
+Keep unchanged:
+General
+
+Do NOT translate General.
+
+==================================================
+4. Reviews
+
+Current:
+My Reviews
+
+New:
+Mere Reviews
+
+If there is room for small helper text, you may show:
+My Reviews
+
+But keep it clean. If it makes layout crowded, only show:
+Mere Reviews
+
+==================================================
+5. Legal links
+
+Keep unchanged:
+Privacy Policy
+Terms & Conditions
+
+Do NOT translate legal wording.
+
+==================================================
+6. Logout
+
+Keep unchanged:
+Logout
+
+Do NOT translate Logout.
+
+==================================================
+7. Delete account wording
+
+Current:
+Delete Account
+
+New:
+Account Delete karein
+
+If there is room for small helper text, you may show:
+Delete Account
+
+But keep layout clean.
+
+Current:
+Request deletion by email
+
+New:
+Email se delete karwayen
+
+If there is room for small helper text, you may show:
+Request deletion by email
+
+==================================================
+8. Keep unchanged
+
+Keep these as-is:
+
+* Name
+* Phone number
+* Profile title
+* General
+* Privacy Policy
+* Terms & Conditions
+* Logout
+* Bottom navigation labels/routes
+* Icons
+* Card design
+* Profile data fetching
+
+==================================================
+EXPECTED FINAL WORDING ON PROFILE PAGE
+======================================
+
+Profile
+
+Ustaad
+
+General
+
+Mere Reviews
+
+Privacy Policy
+Terms & Conditions
+
+Logout
+
+Account Delete karein
+Email se delete karwayen
+
+==================================================
+STRICT RULES
+============
+
+Do NOT touch:
+
+* backend
+* API endpoints
+* auth/logout logic
+* delete account flow logic
+* privacy policy route
+* terms route
+* user role enum
+* worker profile model
+* bottom nav
+* unrelated pages
+
+Only change visible strings and safe display labels.
+
+==================================================
+AFTER CHANGES
+=============
+
+Run:
+flutter analyze --no-pub
+
+Then build APK:
+flutter build apk --release --no-shrink --dart-define=API_BASE_URL=https://handygo-production-jqi9i.ondigitalocean.app/api/v1 --dart-define=WS_URL=https://handygo-production-jqi9i.ondigitalocean.app --dart-define=GOOGLE_MAPS_API_KEY=AIzaSyA04SazaTVlndDbjXR2c3sb7GY-EjJc9gk -PGOOGLE_MAPS_API_KEY=AIzaSyA04SazaTVlndDbjXR2c3sb7GY-EjJc9gk
+
+Final report:
+
+1. Files changed
+2. Confirm Profile title stayed unchanged
+3. Confirm Worker badge/text changed to Ustaad
+4. Confirm My Reviews changed to Mere Reviews
+5. Confirm Privacy Policy / Terms & Conditions / Logout stayed unchanged
+6. Confirm Delete Account wording changed
+7. Confirm no backend/API/auth/delete logic changed
+8. Confirm analyze result
+9. Confirm APK build result and APK path

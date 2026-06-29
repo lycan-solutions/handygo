@@ -78,7 +78,7 @@ class _WorkerNewJobsPageState extends ConsumerState<WorkerNewJobsPage>
                         ),
                         SizedBox(height: 2),
                         Text(
-                          'Pending jobs matching your skills',
+                          'Aapke hunar ke hisaab se kaam',
                           style: TextStyle(fontSize: 13, color: _kGray),
                         ),
                       ],
@@ -347,7 +347,7 @@ class _NewJobCard extends StatelessWidget {
                       // Bid count
                       _MetaChip(
                         icon: Icons.gavel_rounded,
-                        label: '${job.bidCount} bid${job.bidCount == 1 ? '' : 's'}',
+                        label: '${job.bidCount} offer',
                       ),
                       // Posted time
                       _MetaChip(
@@ -370,7 +370,7 @@ class _NewJobCard extends StatelessWidget {
                             context.push('/worker/job/${job.id}');
                           },
                           icon: const Icon(Icons.info_outline_rounded, size: 14),
-                          label: const Text('View Details'),
+                          label: const Text('Detail Dekhein'),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: _kAccent,
                             side: const BorderSide(color: _kAccent),
@@ -395,7 +395,7 @@ class _NewJobCard extends StatelessWidget {
                             context.push('/worker/job/${job.id}/bid?title=$title');
                           },
                           icon: const Icon(Icons.gavel_rounded, size: 14),
-                          label: Text(job.hasMyBid ? 'Update Bid' : 'Bid Now'),
+                          label: Text(job.hasMyBid ? 'Offer Badlein' : 'Offer Bhejein'),
                           style: ElevatedButton.styleFrom(
                             backgroundColor: _kAccent,
                             foregroundColor: Colors.white,
@@ -450,7 +450,7 @@ class _BidPlacedBadge extends StatelessWidget {
           Icon(Icons.check_circle_rounded, size: 11, color: Colors.white),
           SizedBox(width: 3),
           Text(
-            'Bid placed',
+            'Offer bhej di',
             style: TextStyle(
               fontSize: 10.5,
               fontWeight: FontWeight.w600,

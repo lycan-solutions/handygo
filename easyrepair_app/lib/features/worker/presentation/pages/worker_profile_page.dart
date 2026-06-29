@@ -306,7 +306,7 @@ class _WorkerProfilePageState extends ConsumerState<WorkerProfilePage> {
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: const Text(
-                      'Worker',
+                      'Ustaad',
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
@@ -347,7 +347,7 @@ class _WorkerProfilePageState extends ConsumerState<WorkerProfilePage> {
                         ),
                         _SettingsItem(
                           icon: Icons.star_outline_rounded,
-                          label: 'My Reviews',
+                          label: 'Mere Reviews',
                           showDivider: false,
                           onTap: () => Navigator.of(context).push(
                             MaterialPageRoute(
@@ -835,7 +835,7 @@ class _DeleteAccountSection extends StatelessWidget {
                   const SizedBox(width: 14),
                   const Expanded(
                     child: Text(
-                      'Delete Account',
+                      'Account Delete karein',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -870,7 +870,7 @@ class _DeleteAccountSection extends StatelessWidget {
                   const SizedBox(width: 14),
                   const Expanded(
                     child: Text(
-                      'Request deletion by email',
+                      'Email se delete karwayen',
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.w500,

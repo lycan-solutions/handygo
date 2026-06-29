@@ -239,10 +239,10 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
 
   String _computeLiveSummary() {
     if (_isUrgent) {
-      return 'Book karte hi aapka kaam workers ko nazar aayega.';
+      return 'You\'ll start getting Ustaad offers within minutes.';
     }
     if (_selectedDate == null || _selectedTimeSlot == null) {
-      return 'Date aur time select karein.';
+      return 'Select date and time to continue.';
     }
     final liveHour = _slotStartHour(_selectedTimeSlot!) - 1;
     final liveTime = DateTime(
@@ -253,7 +253,7 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
     );
     final timeStr = DateFormat('h:mm a').format(liveTime);
     final dateStr = DateFormat('d MMMM').format(_selectedDate!);
-    return 'Job goes live at $timeStr on $dateStr — 1 hour before the worker arrival window.';
+    return 'Job goes live at $timeStr on $dateStr — 1 hour before the Ustaad arrival time.';
   }
 
   // ── Snackbar helpers ──────────────────────────────────────────────────────
@@ -354,7 +354,7 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
             ),
             ListTile(
               leading: const Icon(Icons.videocam_rounded, color: _kGreen),
-              title: Text('Video - ${_kMaxVideoSecs} sec tak'),
+              title: const Text('Video - 30 sec'),
               onTap: () => Navigator.pop(context, 'video'),
             ),
             const SizedBox(height: 8),
@@ -626,7 +626,7 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
 
     final address = _addressCtrl.text.trim();
     if (address.isEmpty) {
-      _showError('Apna address likhein.');
+      _showError('Enter your address.');
       return;
     }
 
@@ -825,8 +825,8 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
                 _isEditMode
                     ? 'Your booking details have been updated successfully.'
                     : _isUrgent
-                    ? 'Your job is live! Workers nearby will be notified immediately.'
-                    : 'Your job has been scheduled. Workers will be notified 1 hour before the arrival window.',
+                    ? 'Your job is live! Nearby Ustaads will be notified immediately.'
+                    : 'Your job has been scheduled. Ustaads will be notified 1 hour before the arrival time.',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 13,
@@ -1019,12 +1019,12 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
   // ── B. Job type toggle ────────────────────────────────────────────────────
   Widget _buildJobTypeToggle() {
     return _sectionCard(
-      title: 'Kaam kab chahiye?',
+      title: 'Booking Type',
       child: Row(
         children: [
-          _jobTypeBtn(label: 'Normal / Baad mein', urgentMode: false),
+          _jobTypeBtn(label: 'Normal', urgentMode: false),
           const SizedBox(width: 10),
-          _jobTypeBtn(label: 'Urgent / Abhi chahiye', urgentMode: true),
+          _jobTypeBtn(label: 'Urgent', urgentMode: true),
         ],
       ),
     );
@@ -1080,7 +1080,7 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
   // ── C. Scheduling (includes live timing summary at bottom) ────────────────
   Widget _buildSchedulingSection() {
     return _sectionCard(
-      title: 'Date aur Time',
+      title: 'Date & Time',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1095,16 +1095,16 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
   Widget _buildNormalSchedule() {
     const slots = ['Morning', 'Afternoon', 'Evening', 'Night'];
     const slotLabel = {
-      'Morning': 'Subah',
-      'Afternoon': 'Dopahar',
-      'Evening': 'Shaam',
-      'Night': 'Raat',
+      'Morning': 'Morning',
+      'Afternoon': 'Afternoon',
+      'Evening': 'Evening',
+      'Night': 'Night',
     };
     const slotDesc = {
-      'Morning': '9 baje se 12 baje tak',
-      'Afternoon': '12 baje se 4 baje tak',
-      'Evening': '4 baje se 8 baje tak',
-      'Night': '8 baje se 11 baje tak',
+      'Morning': '9 AM – 12 PM',
+      'Afternoon': '12 PM – 4 PM',
+      'Evening': '4 PM – 8 PM',
+      'Night': '8 PM – 11 PM',
     };
 
     Widget slotChip(String slot) {
@@ -1185,7 +1185,7 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
                 const SizedBox(width: 10),
                 Text(
                   _selectedDate == null
-                      ? 'Date select karein'
+                      ? 'Select date'
                       : DateFormat('EEEE, d MMMM yyyy').format(_selectedDate!),
                   style: TextStyle(
                     fontSize: 14,
@@ -1201,7 +1201,7 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
         ),
         const SizedBox(height: 14),
         const Text(
-          'Worker kis time aaye?',
+          'Arrival time',
           style: TextStyle(fontSize: 13, color: _kGray),
         ),
         const SizedBox(height: 8),
@@ -1225,7 +1225,7 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
   }
 
   Widget _buildUrgentSchedule() {
-    const options = ['1 ghante ke andar', '2 ghante ke andar', '4 ghante ke andar'];
+    const options = ['Within 1 hour', 'Within 2 hours', 'Within 4 hours'];
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1282,7 +1282,7 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
         }),
         const SizedBox(height: 4),
         _infoNote(
-          'Booking ke baad worker ko foran message chala jaye ga.',
+          'Nearby Ustaads are notified right away.',
           color: _kRed,
         ),
       ],
@@ -1292,13 +1292,13 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
   // ── D. Issue title ────────────────────────────────────────────────────────
   Widget _buildTitleSection() {
     return _sectionCard(
-      title: 'Masla kya hai?',
+      title: 'What needs fixing?',
       child: TextFormField(
         controller: _titleCtrl,
         textInputAction: TextInputAction.next,
         maxLength: 120,
         decoration: InputDecoration(
-          hintText: 'Misal: AC thanda nahi kar raha, pipe leak hai...',
+          hintText: 'e.g. AC not cooling, water leaking, switch not working',
           hintStyle: const TextStyle(color: _kGray, fontSize: 14),
           counterText: '',
           filled: true,
@@ -1355,7 +1355,7 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
   // ── F. Location ───────────────────────────────────────────────────────────
   Widget _buildLocationSection() {
     return _sectionCard(
-      title: 'Service kahan chahiye?',
+      title: 'Service Address',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1363,7 +1363,7 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
             controller: _addressCtrl,
             textInputAction: TextInputAction.done,
             decoration: InputDecoration(
-              hintText: 'Misal: House 12, Street 5, DHA, Karachi',
+              hintText: 'e.g. House 12, Street 5, DHA Phase 6, Karachi',
               hintStyle: const TextStyle(color: _kGray, fontSize: 14),
               prefixIcon: const Icon(
                 Icons.location_on_rounded,
@@ -1433,8 +1433,8 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
                               Flexible(
                                 child: Text(
                                   (_gpsLat != null && _pickedAddress == null)
-                                      ? 'Location mil gayi'
-                                      : 'Meri current location use karein',
+                                      ? 'Location added'
+                                      : 'Current Location',
                                   style: const TextStyle(
                                     fontSize: 12.5,
                                     fontWeight: FontWeight.w500,
@@ -1480,8 +1480,8 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
                         Flexible(
                           child: Text(
                             (_gpsLat != null && _pickedAddress != null)
-                                ? 'Map se location select ho gayi'
-                                : 'Map par location select karein',
+                                ? 'Map location added'
+                                : 'Pick on Map',
                             style: const TextStyle(
                               fontSize: 12.5,
                               fontWeight: FontWeight.w500,
@@ -1535,7 +1535,7 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
                 SizedBox(width: 5),
                 Expanded(
                   child: Text(
-                    'Location zaroori hai — current location use karein ya map se select karein.',
+                    'Add your location to continue.',
                     style: TextStyle(fontSize: 11, color: Color(0xFFD97706)),
                   ),
                 ),
@@ -1556,7 +1556,7 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
     final hasMedia = visibleExisting.isNotEmpty || _newAttachments.isNotEmpty;
 
     return _sectionCard(
-      title: 'Voice Note ya Photo/Video',
+      title: 'Voice note & photos',
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1619,7 +1619,7 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
               Expanded(
                 child: _buildActionButton(
                   icon: Icons.attach_file_rounded,
-                  label: 'Photo/Video lagayein',
+                  label: 'Add Photo/Video',
                   onTap: canAddMore ? _pickAttachment : null,
                 ),
               ),
@@ -1627,7 +1627,7 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
               Expanded(
                 child: _buildActionButton(
                   icon: Icons.camera_alt_outlined,
-                  label: 'Camera se photo lein',
+                  label: 'Camera',
                   onTap: canAddMore ? _pickFromCamera : null,
                 ),
               ),
@@ -1642,7 +1642,7 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
 
           const SizedBox(height: 8),
           Text(
-            '4 files tak laga sakte hain: photo ya ${_kMaxVideoSecs} sec video  ($_totalAttachmentCount/4)',
+            '$_totalAttachmentCount of 4 · Photos or 30-sec video',
             style: const TextStyle(fontSize: 11, color: _kGray),
           ),
           if (_removedAttachmentIds.isNotEmpty) ...[
@@ -1743,7 +1743,7 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
             const SizedBox(width: 10),
             const Expanded(
               child: Text(
-                'Mic dabayein aur masla bol kar record karein',
+                'Tap to record — describe the problem in your own words',
                 style: TextStyle(fontSize: 13, color: _kGray),
               ),
             ),
@@ -2068,7 +2068,7 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
                 ),
               )
             : Text(
-                _isEditMode ? 'Changes Save Karein' : 'Kaam Book Karein',
+                _isEditMode ? 'Save Changes' : 'Book Service',
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
@@ -2082,16 +2082,16 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
   bool _validateStep1() {
     if (!_isUrgent) {
       if (_selectedDate == null) {
-        _showError('Date select karein.');
+        _showError('Select date.');
         return false;
       }
       if (_selectedTimeSlot == null) {
-        _showError('Time select karein.');
+        _showError('Select arrival time.');
         return false;
       }
     } else {
       if (_urgentOption == null) {
-        _showError('Kitni jaldi worker chahiye? Select karein.');
+        _showError('Select how soon you need an Ustaad.');
         return false;
       }
     }
@@ -2115,7 +2115,7 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
 
   // ── Step indicator ────────────────────────────────────────────────────────────
   Widget _buildStepIndicator() {
-    const labels = ['Time Select Karein', 'Masla Batayein', 'Location'];
+    const labels = ['Schedule', 'Details', 'Address'];
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
@@ -2239,7 +2239,7 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
                   ),
                 ),
                 child: const Text(
-                  'Wapas',
+                  'Back',
                   style: TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
                 ),
               ),
@@ -2273,14 +2273,14 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
                           ),
                         )
                       : Text(
-                          _isEditMode ? 'Changes Save Karein' : 'Kaam Book Karein',
+                          _isEditMode ? 'Save Changes' : 'Book Service',
                           style: const TextStyle(
                             fontSize: 15,
                             fontWeight: FontWeight.w700,
                           ),
                         ))
                   : const Text(
-                      'Aagay',
+                      'Next',
                       style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
                     ),
             ),
@@ -2293,7 +2293,7 @@ class _BookServicePageState extends ConsumerState<BookServicePage>
   // ── Build ─────────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
-    const stepTitles = ['Time Select Karein', 'Masla Batayein', 'Location'];
+    const stepTitles = ['Schedule', 'Details', 'Address'];
 
     return Scaffold(
       backgroundColor: _kSurface,

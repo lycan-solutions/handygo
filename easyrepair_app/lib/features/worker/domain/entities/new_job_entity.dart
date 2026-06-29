@@ -76,8 +76,8 @@ class NewJobEntity {
 
   String get distanceLabel {
     if (distanceKm == null) return '';
-    if (distanceKm! < 1) return '${(distanceKm! * 1000).round()} m away';
-    return '${distanceKm!.toStringAsFixed(1)} km away';
+    if (distanceKm! < 1) return '${(distanceKm! * 1000).round()} m door';
+    return '${distanceKm!.toStringAsFixed(1)} km door';
   }
 
   /// User-facing status label.

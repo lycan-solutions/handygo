@@ -125,9 +125,9 @@ enum NewJobFilter { all, myBids, notBidYet }
 
 extension NewJobFilterX on NewJobFilter {
   String get label => switch (this) {
-        NewJobFilter.all => 'All Jobs',
-        NewJobFilter.myBids => 'My Bid Offers',
-        NewJobFilter.notBidYet => 'Not Bid Yet',
+        NewJobFilter.all => 'Sab Kaam',
+        NewJobFilter.myBids => 'Meri Offers',
+        NewJobFilter.notBidYet => 'Offer nahi bheji',
       };
 }
 

@@ -1,8 +1,8 @@
-name: easyrepair_app
-description: "EasyRepair mobile app for clients and workers."
+name: handygo_app
+description: "handygo mobile app for clients and workers."
 publish_to: "none"
 
-version: 1.0.0+1
+version: 1.0.0+3
 
 environment:
   sdk: ^3.10.4

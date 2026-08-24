@@ -53,8 +53,18 @@ import '../../../../core/theme/app_semantic_colors.dart';
 // This pass changes COLOUR ONLY. Nothing was reordered, no widget moved, and
 // no provider, API call, navigation target or condition was touched.
 
-/// Card radius, matching Home, New Jobs and My Reviews (prototype `.crd`).
-const double _rCard = 16;
+/// Shape values shared with Home, New Jobs and My Reviews.
+const double _rCard = 16;    // prototype `.crd`
+const double _rButton = 14;  // prototype `.btnp`
+const double _rPill = 999;   // prototype `.tg` / `.av`
+const double _hButton = 52;  // prototype `.btnp` min-height
+
+/// First letters of a client's name, for the live-job card's avatar.
+String _initialsOf(String name) {
+  final parts = name.trim().split(RegExp(r'\s+')).where((w) => w.isNotEmpty);
+  final letters = parts.take(2).map((w) => w[0]).join().toUpperCase();
+  return letters.isEmpty ? '—' : letters;
+}
 
 // ── Navigation helper ─────────────────────────────────────────────────────────
 
@@ -251,9 +261,9 @@ class _JobBody extends ConsumerWidget {
                         backgroundColor: c.primary,
                         foregroundColor: c.onPrimary,
                         elevation: 0,
-                        padding: const EdgeInsets.symmetric(vertical: 13),
+                        minimumSize: const Size.fromHeight(_hButton),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                          borderRadius: BorderRadius.circular(_rButton),
                         ),
                         textStyle: const TextStyle(
                           fontSize: 14,
@@ -277,9 +287,9 @@ class _JobBody extends ConsumerWidget {
                           style: OutlinedButton.styleFrom(
                             foregroundColor: c.primary,
                             side: BorderSide(color: c.primary),
-                            padding: const EdgeInsets.symmetric(vertical: 13),
+                            minimumSize: const Size.fromHeight(_hButton),
                             shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
+                              borderRadius: BorderRadius.circular(_rButton),
                             ),
                             textStyle: const TextStyle(
                               fontSize: 14,
@@ -299,9 +309,9 @@ class _JobBody extends ConsumerWidget {
                         style: OutlinedButton.styleFrom(
                           foregroundColor: c.primary,
                           side: BorderSide(color: c.primary),
-                          padding: const EdgeInsets.symmetric(vertical: 13),
+                          minimumSize: const Size.fromHeight(_hButton),
                           shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                            borderRadius: BorderRadius.circular(_rButton),
                           ),
                           textStyle: const TextStyle(
                             fontSize: 14,
@@ -354,15 +364,30 @@ class _JobBody extends ConsumerWidget {
                     label: context.l10n.discoveryViewInspectionReport,
                   ),
 
-                // ── Client info ──────────────────────────────────────────
-                if (job.clientName != null && job.clientName!.isNotEmpty) ...[
-                  _Section(
-                    title: context.l10n.workerClientSection,
-                    child: _InfoRow(
-                      icon: Icons.person_outline_rounded,
-                      label: context.l10n.workerPostedBy,
-                      value: job.clientName!,
-                    ),
+                // ── Location ─────────────────────────────────────────────
+                // Moved above Service details: the prototype's live-job screen
+                // puts the address directly under Call/Chat, because "where am
+                // I going" is what an Ustaad opens this screen for.
+                //
+                // Privacy is unchanged: exact address/map/directions are only
+                // shown once this Ustaad is actually hired — before that the
+                // backend never sends exact coordinates/address (see
+                // WorkersService._toJobDto), so only an approximate area +
+                // distance card is shown.
+                if (isHired)
+                  _LocationSection(job: job, openMapOnLoad: openMapOnLoad)
+                else
+                  _ApproximateLocationCard(job: job),
+                const SizedBox(height: 16),
+
+                // ── Status history ────────────────────────────────────────
+                // Also moved up. This dotted list with times is the prototype's
+                // timeline (Kaam confirm hua / Raaste mein / Pohanch gaya …);
+                // it used to sit below Attachments, near the bottom.
+                if (job.statusHistory.isNotEmpty) ...[
+                  _StatusHistorySection(
+                    history: job.statusHistory,
+                    review: job.review,
                   ),
                   const SizedBox(height: 16),
                 ],
@@ -423,18 +448,6 @@ class _JobBody extends ConsumerWidget {
                     ],
                   ),
                 ),
-                const SizedBox(height: 16),
-
-                // ── Location ─────────────────────────────────────────────
-                // Privacy: exact address/map/directions are only shown once
-                // this Ustaad is actually hired — before that the backend
-                // never sends exact coordinates/address (see
-                // WorkersService._toJobDto), so only an approximate area +
-                // distance card is shown.
-                if (isHired)
-                  _LocationSection(job: job, openMapOnLoad: openMapOnLoad)
-                else
-                  _ApproximateLocationCard(job: job),
                 const SizedBox(height: 16),
 
                 // ── Timeline ─────────────────────────────────────────────
@@ -519,15 +532,6 @@ class _JobBody extends ConsumerWidget {
                 // ── Attachments ───────────────────────────────────────────
                 if (job.attachments.isNotEmpty) ...[
                   _AttachmentsSection(attachments: job.attachments),
-                  const SizedBox(height: 16),
-                ],
-
-                // ── Status history ────────────────────────────────────────
-                if (job.statusHistory.isNotEmpty) ...[
-                  _StatusHistorySection(
-                    history: job.statusHistory,
-                    review: job.review,
-                  ),
                   const SizedBox(height: 16),
                 ],
 
@@ -690,8 +694,8 @@ class _StandardLifecycleSection extends ConsumerWidget {
             backgroundColor: c.primary,
             foregroundColor: c.onPrimary,
             elevation: 0,
-            padding: const EdgeInsets.symmetric(vertical: 13),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            minimumSize: const Size.fromHeight(_hButton),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rButton)),
             textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
         ),
@@ -729,18 +733,19 @@ class _StandardLifecycleSection extends ConsumerWidget {
           const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
-            child: OutlinedButton.icon(
+            // Cancel keeps its width and its 52px target but loses the
+            // outline: it is not a peer of the action above it.
+            child: TextButton.icon(
               onPressed: isLoading
                   ? null
                   : () => _showWorkerCancelReasonDialog(
                       context, ref, job.id, runAction),
               icon: const Icon(Icons.close_rounded, size: 16),
               label: Text(context.l10n.workerCancelJob),
-              style: OutlinedButton.styleFrom(
+              style: TextButton.styleFrom(
                 foregroundColor: c.error,
-                side: BorderSide(color: c.error),
-                padding: const EdgeInsets.symmetric(vertical: 13),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                minimumSize: const Size.fromHeight(_hButton),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rButton)),
                 textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
               ),
             ),
@@ -820,8 +825,8 @@ class _InspectionLifecycleSection extends ConsumerWidget {
             backgroundColor: c.primary,
             foregroundColor: c.onPrimary,
             elevation: 0,
-            padding: const EdgeInsets.symmetric(vertical: 13),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            minimumSize: const Size.fromHeight(_hButton),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rButton)),
             textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           ),
         ),
@@ -892,18 +897,19 @@ class _InspectionLifecycleSection extends ConsumerWidget {
           const SizedBox(height: 10),
           SizedBox(
             width: double.infinity,
-            child: OutlinedButton.icon(
+            // Cancel keeps its width and its 52px target but loses the
+            // outline: it is not a peer of the action above it.
+            child: TextButton.icon(
               onPressed: isLoading
                   ? null
                   : () => _showWorkerCancelReasonDialog(
                       context, ref, job.id, runAction),
               icon: const Icon(Icons.close_rounded, size: 16),
               label: Text(context.l10n.workerCancelJob),
-              style: OutlinedButton.styleFrom(
+              style: TextButton.styleFrom(
                 foregroundColor: c.error,
-                side: BorderSide(color: c.error),
-                padding: const EdgeInsets.symmetric(vertical: 13),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                minimumSize: const Size.fromHeight(_hButton),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rButton)),
                 textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
               ),
             ),
@@ -1077,6 +1083,10 @@ class _StatusCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = context.semanticColors;
     final (bg, fg) = _chipColors(c, job.status);
+    // Only ever true once this Ustaad is hired — the backend does not send a
+    // client name before that, which is exactly when the card should still
+    // lead with the service instead.
+    final hasClient = job.clientName != null && job.clientName!.isNotEmpty;
 
     return Container(
       width: double.infinity,
@@ -1091,23 +1101,39 @@ class _StatusCard extends StatelessWidget {
           Container(
             width: 48,
             height: 48,
+            alignment: Alignment.center,
             decoration: BoxDecoration(
               color: c.softTeal,
-              borderRadius: BorderRadius.circular(14),
+              // A circle once it carries initials, the prototype's `.av`;
+              // the emoji tile keeps its rounded square.
+              borderRadius: BorderRadius.circular(hasClient ? _rPill : 14),
             ),
-            child: Center(
-              child: Text(job.serviceEmoji, style: const TextStyle(fontSize: 24)),
-            ),
+            child: hasClient
+                ? Text(
+                    _initialsOf(job.clientName!),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: c.primary,
+                    ),
+                  )
+                : Text(job.serviceEmoji, style: const TextStyle(fontSize: 24)),
           ),
           const SizedBox(width: 14),
           Expanded(
+            // The prototype's live-job card leads with the person, not the
+            // service: an avatar, their name, then the job underneath. Same
+            // two facts the card already showed plus `job.clientName`, which
+            // this screen was already displaying — just lower down, in a
+            // "Client" section of its own. That section is gone; the name is
+            // shown once, here, where the prototype puts it.
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  job.serviceCategory,
+                  hasClient ? job.clientName! : job.serviceCategory,
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: c.textPrimary,
                   ),
@@ -1116,8 +1142,12 @@ class _StatusCard extends StatelessWidget {
                 ),
                 const SizedBox(height: 3),
                 Text(
-                  job.referenceId,
-                  style: TextStyle(fontSize: 12, color: c.textSecondary),
+                  hasClient
+                      ? '${job.serviceCategory} · ${job.referenceId}'
+                      : job.referenceId,
+                  style: TextStyle(fontSize: 12.5, color: c.textSecondary),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ],
             ),
@@ -1131,7 +1161,7 @@ class _StatusCard extends StatelessWidget {
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                 decoration: BoxDecoration(
                   color: bg,
-                  borderRadius: BorderRadius.circular(20),
+                  borderRadius: BorderRadius.circular(_rPill),
                 ),
                 child: Text(
                   workerJobStatusLabel(context.l10n, job.status),
@@ -1460,7 +1490,7 @@ class _CompleteJobBar extends ConsumerWidget {
       ),
       child: SizedBox(
         width: double.infinity,
-        height: 50,
+        height: _hButton,
         child: ElevatedButton.icon(
           onPressed: isLoading ? null : () => _confirm(context, ref),
           icon: isLoading
@@ -1477,7 +1507,7 @@ class _CompleteJobBar extends ConsumerWidget {
             backgroundColor: c.primary,
             foregroundColor: c.onPrimary,
             elevation: 0,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(_rButton)),
           ),
         ),
       ),
@@ -2872,10 +2902,10 @@ class _MapButton extends StatelessWidget {
       opacity: onPressed == null && !loading ? 0.6 : 1,
       child: Material(
       color: color,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(_rButton),
       elevation: 0,
       child: InkWell(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(_rButton),
         onTap: onPressed,
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 13),

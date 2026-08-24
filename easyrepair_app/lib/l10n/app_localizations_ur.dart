@@ -2353,7 +2353,7 @@ class AppLocalizationsUr extends AppLocalizations {
   String get workerFilterCancelled => 'منسوخ';
 
   @override
-  String get workerFilterAllWork => 'سارا کام';
+  String get workerFilterAllWork => 'نئے کام';
 
   @override
   String get workerFilterMyOffers => 'میری آفرز';
@@ -5992,7 +5992,7 @@ class AppLocalizationsUrLatn extends AppLocalizationsUr {
   String get workerFilterCancelled => 'Cancel';
 
   @override
-  String get workerFilterAllWork => 'Sab Kaam';
+  String get workerFilterAllWork => 'Naye Kaam';
 
   @override
   String get workerFilterMyOffers => 'Meri Offers';

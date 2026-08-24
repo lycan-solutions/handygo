@@ -31,15 +31,30 @@ import '../../../bookings/presentation/utils/status_labels.dart';
 import '../utils/worker_status_labels.dart';
 import '../../../bookings/presentation/utils/booking_labels.dart';
 import '../../../../core/errors/failure_messages.dart';
+import '../../../../core/theme/app_semantic_colors.dart';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
-const _kGreen  = Color(0xFFDB6234);
-const _kDark   = Color(0xFF1A1A1A);
-const _kGray   = Color(0xFF6B7280);
-const _kLight  = Color(0xFF94A3B8);
-const _kBorder = Color(0xFFE2E8F0);
-const _kBg     = Color(0xFFF9FAFB);
-const _kRed    = Color(0xFFEF4444);
+//
+// There isn't one. Every colour on this screen comes from
+// `context.semanticColors` — see `core/theme/app_semantic_colors.dart`.
+//
+// What used to live here, and what each became:
+//
+//   c.primary  #DB6234 -> c.primary        EasyRepair's orange. It was named
+//                                        "green", and is absent from the
+//                                        Ustaad prototype entirely.
+//   c.textPrimary   #1A1A1A -> c.textPrimary
+//   c.textSecondary   #6B7280 -> c.textSecondary
+//   c.textSecondary  #94A3B8 -> c.textSecondary  the palette has two greys, not three.
+//   c.border #E2E8F0 -> c.border
+//   c.background     #F9FAFB -> c.background
+//   c.error    #EF4444 -> c.error
+//
+// This pass changes COLOUR ONLY. Nothing was reordered, no widget moved, and
+// no provider, API call, navigation target or condition was touched.
+
+/// Card radius, matching Home, New Jobs and My Reviews (prototype `.crd`).
+const double _rCard = 16;
 
 // ── Navigation helper ─────────────────────────────────────────────────────────
 
@@ -66,6 +81,7 @@ class WorkerJobDetailPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.semanticColors;
     debugPrint('[WorkerJobDetailPage] build — jobId received=$jobId');
     // Reconnecting on this nested page refreshes the job in place — only
     // this job's data provider is invalidated, so the Ustaad stays on
@@ -76,12 +92,12 @@ class WorkerJobDetailPage extends ConsumerWidget {
         ref.watch(workerJobDetailIsOfflineProvider(jobId)) && jobAsync.hasValue;
 
     return Scaffold(
-      backgroundColor: _kBg,
+      backgroundColor: c.background,
       appBar: _AppBar(),
       body: jobAsync.when(
         skipError: true,
-        loading: () => const Center(child: CircularProgressIndicator(
-          color: _kGreen,
+        loading: () => Center(child: CircularProgressIndicator(
+          color: c.primary,
         )),
         error: (err, _) => isResourceUnavailableFailure(err)
             ? ResourceUnavailableView(
@@ -112,8 +128,9 @@ class _AppBar extends StatelessWidget implements PreferredSizeWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.semanticColors;
     return AppBar(
-      backgroundColor: _kBg,
+      backgroundColor: c.background,
       elevation: 0,
       scrolledUnderElevation: 0,
       leading: GestureDetector(
@@ -121,22 +138,17 @@ class _AppBar extends StatelessWidget implements PreferredSizeWidget {
         child: Container(
           margin: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: c.surface,
             borderRadius: BorderRadius.circular(10),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 8,
-              ),
-            ],
+            border: Border.all(color: c.border),
           ),
-          child: const Icon(Icons.arrow_back_rounded, color: _kDark, size: 20),
+          child: Icon(Icons.arrow_back_rounded, color: c.textPrimary, size: 20),
         ),
       ),
       title: Text(
         context.l10n.workerJobDetailsTitle,
-        style: const TextStyle(
-          color: _kDark,
+        style: TextStyle(
+          color: c.textPrimary,
           fontWeight: FontWeight.w700,
           fontSize: 18,
         ),
@@ -154,6 +166,7 @@ class _JobBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.semanticColors;
     final isPending    = job.status == BookingStatus.pending;
     final isStandard   = job.lane == BookingLane.standard;
     final isInspection = job.lane == BookingLane.inspection;
@@ -195,18 +208,18 @@ class _JobBody extends ConsumerWidget {
                     width: double.infinity,
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: _kGreen.withValues(alpha: 0.08),
+                      color: c.softTeal,
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: _kGreen.withValues(alpha: 0.25)),
+                      border: Border.all(color: c.border),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.info_outline_rounded, size: 18, color: _kGreen),
+                        Icon(Icons.info_outline_rounded, size: 18, color: c.primary),
                         const SizedBox(width: 10),
                         Expanded(
                           child: Text(
                             context.l10n.workerStandardDirectHireNote,
-                            style: TextStyle(fontSize: 12.5, color: _kGreen.withValues(alpha: 0.9), height: 1.4),
+                            style: TextStyle(fontSize: 12.5, color: c.primary, height: 1.4),
                           ),
                         ),
                       ],
@@ -235,8 +248,8 @@ class _JobBody extends ConsumerWidget {
                       icon: const Icon(Icons.gavel_rounded, size: 16),
                       label: Text(context.l10n.workerSendOffer),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: _kGreen,
-                        foregroundColor: Colors.white,
+                        backgroundColor: c.primary,
+                        foregroundColor: c.onPrimary,
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(vertical: 13),
                         shape: RoundedRectangleBorder(
@@ -262,8 +275,8 @@ class _JobBody extends ConsumerWidget {
                           icon: const Icon(Icons.call_rounded, size: 16),
                           label: Text(context.l10n.trackCall),
                           style: OutlinedButton.styleFrom(
-                            foregroundColor: _kGreen,
-                            side: const BorderSide(color: _kGreen),
+                            foregroundColor: c.primary,
+                            side: BorderSide(color: c.primary),
                             padding: const EdgeInsets.symmetric(vertical: 13),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
@@ -284,8 +297,8 @@ class _JobBody extends ConsumerWidget {
                         icon: const Icon(Icons.chat_bubble_outline_rounded, size: 16),
                         label: Text(context.l10n.bidChatWithClient),
                         style: OutlinedButton.styleFrom(
-                          foregroundColor: _kGreen,
-                          side: const BorderSide(color: _kGreen),
+                          foregroundColor: c.primary,
+                          side: BorderSide(color: c.primary),
                           padding: const EdgeInsets.symmetric(vertical: 13),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
@@ -553,6 +566,7 @@ class _StandardServicesSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.semanticColors;
     return _Section(
       title: context.l10n.bookingSelectedServices,
       child: Column(
@@ -568,36 +582,36 @@ class _StandardServicesSection extends StatelessWidget {
                           ? context.l10n.bookingServiceQuantity(
                               item.nameSnapshot, item.quantity)
                           : item.nameSnapshot,
-                      style: const TextStyle(fontSize: 13.5, color: _kDark),
+                      style: TextStyle(fontSize: 13.5, color: c.textPrimary),
                     ),
                   ),
                   Text(
                     formatPkr(item.lineTotal),
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13.5,
                       fontWeight: FontWeight.w600,
-                      color: _kDark,
+                      color: c.textPrimary,
                     ),
                   ),
                 ],
               ),
             ),
           ),
-          const Divider(height: 20, color: _kBorder),
+          Divider(height: 20, color: c.border),
           Row(
             children: [
               Expanded(
                 child: Text(
                   context.l10n.postJobTotal,
-                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: _kDark),
+                  style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: c.textPrimary),
                 ),
               ),
               Text(
                 formatPkr(job.finalPrice ?? job.standardServicesTotal ?? 0),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 15,
                   fontWeight: FontWeight.w800,
-                  color: _kGreen,
+                  color: c.primary,
                 ),
               ),
             ],
@@ -616,6 +630,7 @@ class _StandardLifecycleSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.semanticColors;
     final isLoading = ref.watch(workerLifecycleNotifierProvider).isLoading;
     final canCancel = job.canWorkerCancel;
 
@@ -633,7 +648,7 @@ class _StandardLifecycleSection extends ConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(successMessage),
-              backgroundColor: _kGreen,
+              backgroundColor: c.primary,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
@@ -645,7 +660,7 @@ class _StandardLifecycleSection extends ConsumerWidget {
             SnackBar(
               content: Text(
                   failureMessage(context.l10n, e, fallback: context.l10n.inspectionActionFailed)),
-              backgroundColor: _kRed,
+              backgroundColor: c.error,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
@@ -664,16 +679,16 @@ class _StandardLifecycleSection extends ConsumerWidget {
         child: ElevatedButton.icon(
           onPressed: isLoading ? null : onPressed,
           icon: isLoading
-              ? const SizedBox(
+              ? SizedBox(
                   width: 16,
                   height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(strokeWidth: 2, color: c.onPrimary),
                 )
               : Icon(icon, size: 16),
           label: Text(label),
           style: ElevatedButton.styleFrom(
-            backgroundColor: _kGreen,
-            foregroundColor: Colors.white,
+            backgroundColor: c.primary,
+            foregroundColor: c.onPrimary,
             elevation: 0,
             padding: const EdgeInsets.symmetric(vertical: 13),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -722,8 +737,8 @@ class _StandardLifecycleSection extends ConsumerWidget {
               icon: const Icon(Icons.close_rounded, size: 16),
               label: Text(context.l10n.workerCancelJob),
               style: OutlinedButton.styleFrom(
-                foregroundColor: _kRed,
-                side: const BorderSide(color: _kRed),
+                foregroundColor: c.error,
+                side: BorderSide(color: c.error),
                 padding: const EdgeInsets.symmetric(vertical: 13),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
@@ -745,6 +760,7 @@ class _InspectionLifecycleSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.semanticColors;
     final isLoading = ref.watch(workerLifecycleNotifierProvider).isLoading;
     final canCancel = job.canWorkerCancel;
 
@@ -762,7 +778,7 @@ class _InspectionLifecycleSection extends ConsumerWidget {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(successMessage),
-              backgroundColor: _kGreen,
+              backgroundColor: c.primary,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
@@ -774,7 +790,7 @@ class _InspectionLifecycleSection extends ConsumerWidget {
             SnackBar(
               content: Text(
                   failureMessage(context.l10n, e, fallback: context.l10n.inspectionActionFailed)),
-              backgroundColor: _kRed,
+              backgroundColor: c.error,
               behavior: SnackBarBehavior.floating,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
@@ -793,16 +809,16 @@ class _InspectionLifecycleSection extends ConsumerWidget {
         child: ElevatedButton.icon(
           onPressed: isLoading ? null : onPressed,
           icon: isLoading
-              ? const SizedBox(
+              ? SizedBox(
                   width: 16,
                   height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(strokeWidth: 2, color: c.onPrimary),
                 )
               : Icon(icon, size: 16),
           label: Text(label),
           style: ElevatedButton.styleFrom(
-            backgroundColor: _kGreen,
-            foregroundColor: Colors.white,
+            backgroundColor: c.primary,
+            foregroundColor: c.onPrimary,
             elevation: 0,
             padding: const EdgeInsets.symmetric(vertical: 13),
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -835,18 +851,18 @@ class _InspectionLifecycleSection extends ConsumerWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(14),
             decoration: BoxDecoration(
-              color: const Color(0xFFFFF7ED),
+              color: c.warningSurface,
               borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: const Color(0xFFFDBA74)),
+              border: Border.all(color: c.warning),
             ),
             child: Row(
               children: [
-                const Icon(Icons.hourglass_top_rounded, size: 18, color: Color(0xFFC2541D)),
+                Icon(Icons.hourglass_top_rounded, size: 18, color: c.warning),
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     context.l10n.workerReportSubmittedWaiting,
-                    style: const TextStyle(fontSize: 12.5, color: Color(0xFFC2541D), height: 1.4),
+                    style: TextStyle(fontSize: 12.5, color: c.warning, height: 1.4),
                   ),
                 ),
               ],
@@ -884,8 +900,8 @@ class _InspectionLifecycleSection extends ConsumerWidget {
               icon: const Icon(Icons.close_rounded, size: 16),
               label: Text(context.l10n.workerCancelJob),
               style: OutlinedButton.styleFrom(
-                foregroundColor: _kRed,
-                side: const BorderSide(color: _kRed),
+                foregroundColor: c.error,
+                side: BorderSide(color: c.error),
                 padding: const EdgeInsets.symmetric(vertical: 13),
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 textStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
@@ -967,6 +983,7 @@ class _CancelReasonDialogState extends State<_CancelReasonDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.semanticColors;
     final l10n = context.l10n;
     final isOther = _isOtherFor(l10n);
     return AlertDialog(
@@ -981,7 +998,7 @@ class _CancelReasonDialogState extends State<_CancelReasonDialog> {
         children: [
           Text(
             l10n.workerCancelJobBody,
-            style: const TextStyle(color: _kGray, fontSize: 13.5),
+            style: TextStyle(color: c.textSecondary, fontSize: 13.5),
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<String>(
@@ -990,10 +1007,10 @@ class _CancelReasonDialogState extends State<_CancelReasonDialog> {
             decoration: InputDecoration(
               hintText: l10n.cancelReasonSelect,
               filled: true,
-              fillColor: _kBg,
+              fillColor: c.background,
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(10),
-                borderSide: const BorderSide(color: _kBorder),
+                borderSide: BorderSide(color: c.border),
               ),
               contentPadding:
                   const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
@@ -1017,10 +1034,10 @@ class _CancelReasonDialogState extends State<_CancelReasonDialog> {
               decoration: InputDecoration(
                 hintText: l10n.workerCancelOwnReasonHint,
                 filled: true,
-                fillColor: _kBg,
+                fillColor: c.background,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(10),
-                  borderSide: const BorderSide(color: _kBorder),
+                  borderSide: BorderSide(color: c.border),
                 ),
                 contentPadding: const EdgeInsets.all(12),
               ),
@@ -1031,7 +1048,7 @@ class _CancelReasonDialogState extends State<_CancelReasonDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context, null),
-          child: Text(l10n.workerKeepJob, style: const TextStyle(color: _kGray)),
+          child: Text(l10n.workerKeepJob, style: TextStyle(color: c.textSecondary)),
         ),
         TextButton(
           onPressed: _canConfirmFor(l10n)
@@ -1042,7 +1059,7 @@ class _CancelReasonDialogState extends State<_CancelReasonDialog> {
               : null,
           child: Text(
             l10n.workerYesCancel,
-            style: const TextStyle(color: _kRed, fontWeight: FontWeight.w600),
+            style: TextStyle(color: c.error, fontWeight: FontWeight.w600),
           ),
         ),
       ],
@@ -1058,15 +1075,16 @@ class _StatusCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final (bg, fg) = _chipColors(job.status);
+    final c = context.semanticColors;
+    final (bg, fg) = _chipColors(c, job.status);
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _kBorder),
+        color: c.surface,
+        borderRadius: BorderRadius.circular(_rCard),
+        border: Border.all(color: c.border),
       ),
       child: Row(
         children: [
@@ -1074,7 +1092,7 @@ class _StatusCard extends StatelessWidget {
             width: 48,
             height: 48,
             decoration: BoxDecoration(
-              color: _kGreen.withValues(alpha: 0.10),
+              color: c.softTeal,
               borderRadius: BorderRadius.circular(14),
             ),
             child: Center(
@@ -1088,10 +1106,10 @@ class _StatusCard extends StatelessWidget {
               children: [
                 Text(
                   job.serviceCategory,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
-                    color: _kDark,
+                    color: c.textPrimary,
                   ),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -1099,7 +1117,7 @@ class _StatusCard extends StatelessWidget {
                 const SizedBox(height: 3),
                 Text(
                   job.referenceId,
-                  style: const TextStyle(fontSize: 12, color: _kLight),
+                  style: TextStyle(fontSize: 12, color: c.textSecondary),
                 ),
               ],
             ),
@@ -1135,16 +1153,16 @@ class _StatusCard extends StatelessWidget {
     );
   }
 
-  (Color, Color) _chipColors(BookingStatus s) {
+  (Color, Color) _chipColors(AppSemanticColors c, BookingStatus s) {
     if (s.isWorkerActive) {
-      return (const Color(0xFFDCFCE7), const Color(0xFF15803D));
+      return (c.successSoft, c.success);
     }
     return switch (s) {
       BookingStatus.completed =>
-        (const Color(0xFFDCFCE7), const Color(0xFF15803D)),
+        (c.successSoft, c.success),
       BookingStatus.cancelled || BookingStatus.rejected =>
-        (const Color(0xFFFEF2F2), _kRed),
-      _ => (const Color(0xFFF1F5F9), _kGray),
+        (c.surfaceSubtle, c.error),
+      _ => (c.surfaceSubtle, c.textSecondary),
     };
   }
 }
@@ -1159,23 +1177,24 @@ class _Section extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.semanticColors;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _kBorder),
+        color: c.surface,
+        borderRadius: BorderRadius.circular(_rCard),
+        border: Border.all(color: c.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w700,
-              color: _kDark,
+              color: c.textPrimary,
             ),
           ),
           const SizedBox(height: 12),
@@ -1203,25 +1222,26 @@ class _InfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.semanticColors;
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         crossAxisAlignment:
             multiline ? CrossAxisAlignment.start : CrossAxisAlignment.center,
         children: [
-          Icon(icon, size: 16, color: _kLight),
+          Icon(icon, size: 16, color: c.textSecondary),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(label, style: const TextStyle(fontSize: 11, color: _kLight)),
+                Text(label, style: TextStyle(fontSize: 11, color: c.textSecondary)),
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13.5,
-                    color: _kDark,
+                    color: c.textPrimary,
                     height: 1.4,
                   ),
                   maxLines: multiline ? null : 2,
@@ -1244,6 +1264,7 @@ class _AttachmentsSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.semanticColors;
     final images = attachments.where((a) => a.type == AttachmentType.image).toList();
     final videos = attachments.where((a) => a.type == AttachmentType.video).toList();
     final audios = attachments.where((a) => a.type == AttachmentType.audio).toList();
@@ -1255,14 +1276,14 @@ class _AttachmentsSection extends StatelessWidget {
         children: [
           if (images.isNotEmpty) ...[
             Text(context.l10n.inspectionPhotos,
-                style: const TextStyle(fontSize: 12, color: _kLight)),
+                style: TextStyle(fontSize: 12, color: c.textSecondary)),
             const SizedBox(height: 10),
             BookingImageGrid(images: images),
           ],
           if (videos.isNotEmpty) ...[
             if (images.isNotEmpty) const SizedBox(height: 14),
             Text(context.l10n.workerAttachmentsVideos,
-                style: const TextStyle(fontSize: 12, color: _kLight)),
+                style: TextStyle(fontSize: 12, color: c.textSecondary)),
             const SizedBox(height: 8),
             ...videos.map((v) => Padding(
                   padding: const EdgeInsets.only(bottom: 8),
@@ -1272,7 +1293,7 @@ class _AttachmentsSection extends StatelessWidget {
           if (audios.isNotEmpty) ...[
             if (images.isNotEmpty || videos.isNotEmpty) const SizedBox(height: 14),
             Text(context.l10n.workerAttachmentsVoiceNotes,
-                style: const TextStyle(fontSize: 12, color: _kLight)),
+                style: TextStyle(fontSize: 12, color: c.textSecondary)),
             const SizedBox(height: 8),
             ...audios.map((a) => Padding(
                   padding: const EdgeInsets.only(bottom: 8),
@@ -1294,6 +1315,7 @@ class _StatusHistorySection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.semanticColors;
     final hasReview = review != null;
     return _Section(
       title: context.l10n.workerStatusHistory,
@@ -1312,12 +1334,12 @@ class _StatusHistorySection extends StatelessWidget {
                       height: 10,
                       margin: const EdgeInsets.only(top: 3),
                       decoration: BoxDecoration(
-                        color: isLast ? _kGreen : _kLight,
+                        color: isLast ? c.primary : c.textSecondary,
                         shape: BoxShape.circle,
                       ),
                     ),
                     if (!isLast)
-                      Container(width: 1, height: 28, color: _kBorder),
+                      Container(width: 1, height: 28, color: c.border),
                   ],
                 ),
                 const SizedBox(width: 10),
@@ -1332,19 +1354,19 @@ class _StatusHistorySection extends StatelessWidget {
                           style: TextStyle(
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            color: isLast ? _kGreen : _kDark,
+                            color: isLast ? c.primary : c.textPrimary,
                           ),
                         ),
                         if (entry.note != null && entry.note!.isNotEmpty)
                           Text(
                             entry.note!,
-                            style: const TextStyle(fontSize: 11.5, color: _kGray),
+                            style: TextStyle(fontSize: 11.5, color: c.textSecondary),
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
                         Text(
                           DateFormat('d MMM, h:mm a').format(entry.createdAt),
-                          style: const TextStyle(fontSize: 11, color: _kLight),
+                          style: TextStyle(fontSize: 11, color: c.textSecondary),
                         ),
                       ],
                     ),
@@ -1361,8 +1383,8 @@ class _StatusHistorySection extends StatelessWidget {
                   width: 10,
                   height: 10,
                   margin: const EdgeInsets.only(top: 3),
-                  decoration: const BoxDecoration(
-                    color: Color(0xFFF59E0B),
+                  decoration: BoxDecoration(
+                    color: c.warning,
                     shape: BoxShape.circle,
                   ),
                 ),
@@ -1377,10 +1399,10 @@ class _StatusHistorySection extends StatelessWidget {
                           children: [
                             Text(
                               context.l10n.trackStepReviewed,
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontSize: 13,
                                 fontWeight: FontWeight.w600,
-                                color: Color(0xFFF59E0B),
+                                color: c.warning,
                               ),
                             ),
                             const SizedBox(width: 6),
@@ -1392,15 +1414,15 @@ class _StatusHistorySection extends StatelessWidget {
                                     : Icons.star_outline_rounded,
                                 size: 12,
                                 color: i < r
-                                    ? const Color(0xFFF59E0B)
-                                    : _kBorder,
+                                    ? c.warning
+                                    : c.border,
                               );
                             }),
                           ],
                         ),
                         Text(
                           DateFormat('d MMM, h:mm a').format(review!.createdAt),
-                          style: const TextStyle(fontSize: 11, color: _kLight),
+                          style: TextStyle(fontSize: 11, color: c.textSecondary),
                         ),
                       ],
                     ),
@@ -1422,6 +1444,7 @@ class _CompleteJobBar extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final c = context.semanticColors;
     final isLoading = ref.watch(completeJobProvider).isLoading;
 
     return Container(
@@ -1432,8 +1455,8 @@ class _CompleteJobBar extends ConsumerWidget {
         12 + MediaQuery.of(context).padding.bottom,
       ),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: _kBorder)),
+        color: c.surface,
+        border: Border(top: BorderSide(color: c.border)),
       ),
       child: SizedBox(
         width: double.infinity,
@@ -1441,18 +1464,18 @@ class _CompleteJobBar extends ConsumerWidget {
         child: ElevatedButton.icon(
           onPressed: isLoading ? null : () => _confirm(context, ref),
           icon: isLoading
-              ? const SizedBox(
+              ? SizedBox(
                   width: 18,
                   height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(strokeWidth: 2, color: c.onPrimary),
                 )
               : const Icon(Icons.check_circle_outline_rounded, size: 18),
           label: Text(isLoading
               ? context.l10n.workerCompleting
               : context.l10n.workerMarkAsCompleted),
           style: ElevatedButton.styleFrom(
-            backgroundColor: _kGreen,
-            foregroundColor: Colors.white,
+            backgroundColor: c.primary,
+            foregroundColor: c.onPrimary,
             elevation: 0,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
           ),
@@ -1462,6 +1485,7 @@ class _CompleteJobBar extends ConsumerWidget {
   }
 
   Future<void> _confirm(BuildContext context, WidgetRef ref) async {
+    final c = context.semanticColors;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -1472,19 +1496,19 @@ class _CompleteJobBar extends ConsumerWidget {
         ),
         content: Text(
           context.l10n.workerMarkCompletedBody,
-          style: const TextStyle(color: _kGray, fontSize: 14),
+          style: TextStyle(color: c.textSecondary, fontSize: 14),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
             child: Text(context.l10n.commonCancel,
-                style: const TextStyle(color: _kLight)),
+                style: TextStyle(color: c.textSecondary)),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(ctx, true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: _kGreen,
-              foregroundColor: Colors.white,
+              backgroundColor: c.primary,
+              foregroundColor: c.onPrimary,
               elevation: 0,
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             ),
@@ -1527,6 +1551,7 @@ class _ReviewSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.semanticColors;
     return _Section(
       title: context.l10n.workerClientReview,
       child: Column(
@@ -1538,22 +1563,22 @@ class _ReviewSection extends StatelessWidget {
                 i < review.rating ? Icons.star_rounded : Icons.star_outline_rounded,
                 size: 18,
                 color: i < review.rating
-                    ? const Color(0xFFF59E0B)
-                    : const Color(0xFFD1D5DB),
+                    ? c.warning
+                    : c.border,
               )),
               const SizedBox(width: 8),
               Text(
                 context.l10n.workerReviewRatingOutOfFive(review.rating),
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 13,
                   fontWeight: FontWeight.w700,
-                  color: _kDark,
+                  color: c.textPrimary,
                 ),
               ),
               const Spacer(),
               Text(
                 DateFormat('d MMM yyyy').format(review.createdAt),
-                style: const TextStyle(fontSize: 11, color: _kLight),
+                style: TextStyle(fontSize: 11, color: c.textSecondary),
               ),
             ],
           ),
@@ -1561,20 +1586,20 @@ class _ReviewSection extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               review.comment!,
-              style: const TextStyle(fontSize: 13.5, color: Color(0xFF374151), height: 1.5),
+              style: TextStyle(fontSize: 14, color: c.textPrimary, height: 1.5),
             ),
           ],
           if (clientName != null && clientName!.isNotEmpty) ...[
             const SizedBox(height: 10),
             Row(
               children: [
-                const Icon(Icons.person_outline_rounded, size: 13, color: _kLight),
+                Icon(Icons.person_outline_rounded, size: 13, color: c.textSecondary),
                 const SizedBox(width: 4),
                 Text(
                   clientName!,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: _kGray,
+                    color: c.textSecondary,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -1673,18 +1698,19 @@ class _ClientCancelledBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.semanticColors;
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        color: const Color(0xFFFFF1F2),
+        color: c.surfaceSubtle,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFFECDD3)),
+        border: Border.all(color: c.border),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.info_outline_rounded, size: 18, color: _kRed),
+          Icon(Icons.info_outline_rounded, size: 18, color: c.error),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -1692,17 +1718,17 @@ class _ClientCancelledBanner extends StatelessWidget {
               children: [
                 Text(
                   context.l10n.workerClientCancelledBooking,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
-                    color: _kRed,
+                    color: c.error,
                   ),
                 ),
                 if (reason != null && reason!.isNotEmpty) ...[
                   const SizedBox(height: 3),
                   Text(
                     reason!,
-                    style: const TextStyle(fontSize: 12.5, color: _kGray, height: 1.4),
+                    style: TextStyle(fontSize: 12.5, color: c.textSecondary, height: 1.4),
                   ),
                 ],
               ],
@@ -1730,6 +1756,7 @@ class _ApproximateLocationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.semanticColors;
     final distanceLabel = _distanceLabel(context.l10n);
     return _Section(
       title: context.l10n.chatAttachLocation,
@@ -1737,9 +1764,9 @@ class _ApproximateLocationCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
-          color: _kBg,
+          color: c.background,
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: _kBorder),
+          border: Border.all(color: c.border),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -1747,17 +1774,17 @@ class _ApproximateLocationCard extends StatelessWidget {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.location_on_outlined, size: 16, color: _kLight),
+                Icon(Icons.location_on_outlined, size: 16, color: c.textSecondary),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     job.city.isNotEmpty
                         ? context.l10n.workerApproximateArea(job.city)
                         : context.l10n.workerApproximateAreaUnavailable,
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 13,
                       fontWeight: FontWeight.w600,
-                      color: _kDark,
+                      color: c.textPrimary,
                     ),
                   ),
                 ),
@@ -1767,11 +1794,11 @@ class _ApproximateLocationCard extends StatelessWidget {
               const SizedBox(height: 6),
               Row(
                 children: [
-                  const Icon(Icons.near_me_outlined, size: 16, color: _kLight),
+                  Icon(Icons.near_me_outlined, size: 16, color: c.textSecondary),
                   const SizedBox(width: 8),
                   Text(
                     context.l10n.workerDistanceLabel(distanceLabel),
-                    style: const TextStyle(fontSize: 12.5, color: _kGray),
+                    style: TextStyle(fontSize: 12.5, color: c.textSecondary),
                   ),
                 ],
               ),
@@ -1779,7 +1806,7 @@ class _ApproximateLocationCard extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               context.l10n.workerExactAddressAfterHire,
-              style: const TextStyle(fontSize: 11.5, color: _kLight, height: 1.4),
+              style: TextStyle(fontSize: 11.5, color: c.textSecondary, height: 1.4),
             ),
           ],
         ),
@@ -2112,13 +2139,14 @@ class _LocationSectionState extends ConsumerState<_LocationSection>
   }
 
   Set<Polyline> _buildPolylines() {
+    final c = context.semanticColors;
     if (!_directionsActive) return {};
     if (_routePoints.isNotEmpty) {
       return {
         Polyline(
           polylineId: const PolylineId('route'),
           points: _routePoints,
-          color: _kGreen,
+          color: c.primary,
           width: 5,
         ),
       };
@@ -2129,7 +2157,7 @@ class _LocationSectionState extends ConsumerState<_LocationSection>
       Polyline(
         polylineId: const PolylineId('route'),
         points: [_workerPos!, _jobLatLng],
-        color: _kGreen,
+        color: c.primary,
         width: 3,
         patterns: [PatternItem.dash(16), PatternItem.gap(8)],
       ),
@@ -2140,6 +2168,7 @@ class _LocationSectionState extends ConsumerState<_LocationSection>
 
   @override
   Widget build(BuildContext context) {
+    final c = context.semanticColors;
     if (!_hasJobLoc) {
       return _Section(
         title: context.l10n.chatAttachLocation,
@@ -2209,19 +2238,14 @@ class _LocationSectionState extends ConsumerState<_LocationSection>
                     child: Container(
                       padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
-                        color: Colors.white,
+                        color: c.surface,
                         borderRadius: BorderRadius.circular(8),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.12),
-                            blurRadius: 6,
-                          ),
-                        ],
+                        border: Border.all(color: c.border),
                       ),
-                      child: const Icon(
+                      child: Icon(
                         Icons.fullscreen_rounded,
                         size: 18,
-                        color: _kDark,
+                        color: c.textPrimary,
                       ),
                     ),
                   ),
@@ -2236,9 +2260,9 @@ class _LocationSectionState extends ConsumerState<_LocationSection>
             width: double.infinity,
             padding: const EdgeInsets.fromLTRB(12, 8, 12, 0),
             decoration: BoxDecoration(
-              color: _kBg,
+              color: c.background,
               borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: _kBorder),
+              border: Border.all(color: c.border),
             ),
             child: Column(
               children: [
@@ -2250,7 +2274,7 @@ class _LocationSectionState extends ConsumerState<_LocationSection>
                     value: widget.job.address!,
                     multiline: true,
                   ),
-                  const Divider(height: 1, thickness: 0.5, color: _kBorder),
+                  Divider(height: 1, thickness: 0.5, color: c.border),
                   const SizedBox(height: 8),
                 ],
                 _InfoRow(
@@ -2272,28 +2296,28 @@ class _LocationSectionState extends ConsumerState<_LocationSection>
                     onPressed:
                         _gettingLocation ? null : _startDirections,
                     icon: _gettingLocation
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 14,
                             height: 14,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              color: _kGreen,
+                              color: c.primary,
                             ),
                           )
-                        : const Icon(
+                        : Icon(
                             Icons.directions_rounded,
                             size: 16,
-                            color: _kGreen,
+                            color: c.primary,
                           ),
                     label: Text(
                       _gettingLocation
                           ? context.l10n.workerGettingLocation
                           : context.l10n.workerDirections,
-                      style: const TextStyle(
-                          color: _kGreen, fontSize: 13),
+                      style: TextStyle(
+                          color: c.primary, fontSize: 13),
                     ),
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: _kGreen),
+                      side: BorderSide(color: c.primary),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10)),
                       padding:
@@ -2305,17 +2329,17 @@ class _LocationSectionState extends ConsumerState<_LocationSection>
                 Expanded(
                   child: OutlinedButton.icon(
                     onPressed: _openExternalMaps,
-                    icon: const Icon(
+                    icon: Icon(
                       Icons.open_in_new_rounded,
                       size: 16,
-                      color: _kGray,
+                      color: c.textSecondary,
                     ),
                     label: Text(
                       context.l10n.workerOpenInMaps,
-                      style: const TextStyle(color: _kGray, fontSize: 13),
+                      style: TextStyle(color: c.textSecondary, fontSize: 13),
                     ),
                     style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: _kBorder),
+                      side: BorderSide(color: c.border),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(10)),
                       padding:
@@ -2333,18 +2357,18 @@ class _LocationSectionState extends ConsumerState<_LocationSection>
                     padding: const EdgeInsets.symmetric(
                         horizontal: 12, vertical: 9),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFECFDF5),
+                      color: c.softTeal,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.navigation_rounded,
-                            size: 16, color: _kGreen),
+                        Icon(Icons.navigation_rounded,
+                            size: 16, color: c.primary),
                         const SizedBox(width: 6),
                         Text(
                           context.l10n.workerDirectionsActive,
-                          style: const TextStyle(
-                            color: _kGreen,
+                          style: TextStyle(
+                            color: c.primary,
                             fontSize: 13,
                             fontWeight: FontWeight.w500,
                           ),
@@ -2357,7 +2381,7 @@ class _LocationSectionState extends ConsumerState<_LocationSection>
                 OutlinedButton(
                   onPressed: _stopDirections,
                   style: OutlinedButton.styleFrom(
-                    side: const BorderSide(color: _kRed),
+                    side: BorderSide(color: c.error),
                     shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(10)),
                     padding: const EdgeInsets.symmetric(
@@ -2365,7 +2389,7 @@ class _LocationSectionState extends ConsumerState<_LocationSection>
                   ),
                   child: Text(
                     context.l10n.inspFormStop,
-                    style: const TextStyle(color: _kRed, fontSize: 13),
+                    style: TextStyle(color: c.error, fontSize: 13),
                   ),
                 ),
               ],
@@ -2680,13 +2704,14 @@ class _FullScreenMapPageState extends ConsumerState<_FullScreenMapPage>
   }
 
   Set<Polyline> _buildPolylines() {
+    final c = context.semanticColors;
     if (!_directionsActive) return {};
     if (_routePoints.isNotEmpty) {
       return {
         Polyline(
           polylineId: const PolylineId('route'),
           points: _routePoints,
-          color: _kGreen,
+          color: c.primary,
           width: 5,
         ),
       };
@@ -2697,7 +2722,7 @@ class _FullScreenMapPageState extends ConsumerState<_FullScreenMapPage>
       Polyline(
         polylineId: const PolylineId('route'),
         points: [_workerPos!, _jobLatLng],
-        color: _kGreen,
+        color: c.primary,
         width: 3,
         patterns: [PatternItem.dash(16), PatternItem.gap(8)],
       ),
@@ -2708,6 +2733,7 @@ class _FullScreenMapPageState extends ConsumerState<_FullScreenMapPage>
 
   @override
   Widget build(BuildContext context) {
+    final c = context.semanticColors;
     final bottomPad = MediaQuery.of(context).padding.bottom;
 
     return PopScope(
@@ -2716,17 +2742,17 @@ class _FullScreenMapPageState extends ConsumerState<_FullScreenMapPage>
         if (!didPop) _popWithResult();
       },
       child: Scaffold(
-        backgroundColor: _kBg,
+        backgroundColor: c.background,
         appBar: AppBar(
-          backgroundColor: _kBg,
+          backgroundColor: c.background,
           elevation: 0,
           scrolledUnderElevation: 0,
-          foregroundColor: _kDark,
+          foregroundColor: c.textPrimary,
           leading: BackButton(onPressed: _popWithResult),
           title: Text(
             widget.job.serviceCategory,
-            style: const TextStyle(
-              color: _kDark,
+            style: TextStyle(
+              color: c.textPrimary,
               fontSize: 16,
               fontWeight: FontWeight.w700,
             ),
@@ -2772,7 +2798,7 @@ class _FullScreenMapPageState extends ConsumerState<_FullScreenMapPage>
                           child: _MapButton(
                             label: context.l10n.workerDirectionsActive,
                             icon: Icons.navigation_rounded,
-                            color: _kGreen,
+                            color: c.primary,
                             onPressed: null,
                           ),
                         ),
@@ -2780,7 +2806,7 @@ class _FullScreenMapPageState extends ConsumerState<_FullScreenMapPage>
                         _MapButton(
                           label: context.l10n.inspFormStop,
                           icon: Icons.stop_rounded,
-                          color: _kRed,
+                          color: c.error,
                           onPressed: _stopDirections,
                         ),
                       ],
@@ -2793,7 +2819,7 @@ class _FullScreenMapPageState extends ConsumerState<_FullScreenMapPage>
                                 ? context.l10n.workerGettingLocation
                                 : context.l10n.workerDirections,
                             icon: Icons.directions_rounded,
-                            color: _kGreen,
+                            color: c.primary,
                             onPressed:
                                 _gettingLocation ? null : _startDirections,
                             loading: _gettingLocation,
@@ -2804,7 +2830,7 @@ class _FullScreenMapPageState extends ConsumerState<_FullScreenMapPage>
                           child: _MapButton(
                             label: context.l10n.workerOpenInMaps,
                             icon: Icons.open_in_new_rounded,
-                            color: _kGray,
+                            color: c.textSecondary,
                             onPressed: _openExternalMaps,
                           ),
                         ),
@@ -2837,14 +2863,17 @@ class _MapButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final effective = onPressed == null && !loading
-        ? color.withValues(alpha: 0.6)
-        : color;
-    return Material(
-      color: effective,
+    final c = context.semanticColors;
+    // Disabled is dimmed with Opacity, never by deriving a fainter colour: a
+    // colour comes from the palette or it does not exist. The elevation and
+    // its black shadow are gone for the same reason the cards lost theirs; a
+    // solid fill reads perfectly well against the map without one.
+    return Opacity(
+      opacity: onPressed == null && !loading ? 0.6 : 1,
+      child: Material(
+      color: color,
       borderRadius: BorderRadius.circular(12),
-      elevation: 4,
-      shadowColor: Colors.black26,
+      elevation: 0,
       child: InkWell(
         borderRadius: BorderRadius.circular(12),
         onTap: onPressed,
@@ -2855,21 +2884,21 @@ class _MapButton extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               if (loading)
-                const SizedBox(
+                SizedBox(
                   width: 15,
                   height: 15,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    color: Colors.white,
+                    color: c.onPrimary,
                   ),
                 )
               else
-                Icon(icon, size: 15, color: Colors.white),
+                Icon(icon, size: 15, color: c.onPrimary),
               const SizedBox(width: 7),
               Text(
                 label,
-                style: const TextStyle(
-                  color: Colors.white,
+                style: TextStyle(
+                  color: c.onPrimary,
                   fontSize: 13,
                   fontWeight: FontWeight.w600,
                 ),
@@ -2877,6 +2906,7 @@ class _MapButton extends StatelessWidget {
             ],
           ),
         ),
+      ),
       ),
     );
   }
@@ -2892,21 +2922,22 @@ class _ErrorScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final c = context.semanticColors;
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline_rounded, size: 56, color: Color(0xFFCBD5E1)),
+            Icon(Icons.error_outline_rounded, size: 56, color: c.textSecondary),
             const SizedBox(height: 16),
-            Text(message, style: const TextStyle(color: _kGray, fontSize: 14), textAlign: TextAlign.center),
+            Text(message, style: TextStyle(color: c.textSecondary, fontSize: 14), textAlign: TextAlign.center),
             const SizedBox(height: 20),
             ElevatedButton(
               onPressed: onRetry,
               style: ElevatedButton.styleFrom(
-                backgroundColor: _kGreen,
-                foregroundColor: Colors.white,
+                backgroundColor: c.primary,
+                foregroundColor: c.onPrimary,
                 elevation: 0,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),

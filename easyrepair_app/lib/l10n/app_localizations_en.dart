@@ -2396,7 +2396,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workerFilterCancelled => 'Cancelled';
 
   @override
-  String get workerFilterAllWork => 'All Work';
+  String get workerFilterAllWork => 'All New';
 
   @override
   String get workerFilterMyOffers => 'My Offers';

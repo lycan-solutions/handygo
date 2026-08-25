@@ -233,6 +233,11 @@ class _JobCard extends ConsumerWidget {
         isActive && standardAction == null && inspectionAction == null;
     final cancelledByClient = job.status == BookingStatus.cancelled &&
         job.cancelledByRole == CancelledByRole.client;
+    // The two tests the card already ran inline, lifted to names so the
+    // headline and the supporting line cannot disagree about them. Both
+    // expressions are character-for-character what they replaced.
+    final hasTitle = job.title != null && job.title!.isNotEmpty;
+    final hasClient = job.clientName != null && job.clientName!.isNotEmpty;
 
     return GestureDetector(
       onTap: () => context.push('/worker/job/${job.id}').then((_) {
@@ -314,97 +319,90 @@ class _JobCard extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // ── Top row ──────────────────────────────────────────────
+                // ── Status + flags on the left, money on the right ───────
+                //
+                // The prototype's job card leads with two things only: what
+                // kind of job this is, and what it is worth. The amount used
+                // to be an 11px item buried in a five-item Wrap between a
+                // chip and a clock — the single number an Ustaad scans for,
+                // rendered smaller than the address. It is the right-hand
+                // anchor now, and everything that was competing with it has
+                // moved below the divider.
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Info
                     Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      child: Wrap(
+                        spacing: 6,
+                        runSpacing: 6,
+                        crossAxisAlignment: WrapCrossAlignment.center,
                         children: [
-                          Text(
-                            job.serviceCategory,
-                            style: TextStyle(
-                              fontSize: 14.5,
-                              fontWeight: FontWeight.w700,
-                              color: c.textPrimary,
-                            ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          const SizedBox(height: 3),
-                          Row(
-                            children: [
-                              // Flexible so a long reference id can never
-                              // overflow this row on a narrow screen.
-                              Flexible(
-                                child: Text(
-                                  job.referenceId,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: c.textSecondary,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ),
-                              if (job.clientName != null &&
-                                  job.clientName!.isNotEmpty) ...[
-                                Text(
-                                  ' · ',
-                                  style: TextStyle(
-                                      fontSize: 11, color: c.textSecondary),
-                                ),
-                                Icon(
-                                  Icons.person_outline_rounded,
-                                  size: 10,
-                                  color: c.textSecondary,
-                                ),
-                                const SizedBox(width: 2),
-                                Flexible(
-                                  child: Text(
-                                    job.clientName!,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      color: c.textSecondary,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
+                          // My Jobs → Applied shows THIS worker's own bid
+                          // outcome, not the booking's status: a job awarded
+                          // to someone else leaves the booking ACCEPTED while
+                          // this worker's bid is REJECTED, and showing
+                          // "Assigned" there would read as though they had
+                          // won it.
+                          if (job.myBidStatus != null)
+                            _BidStatusChip(outcome: job.myBidStatus!)
+                          else
+                            _StatusChip(status: job.status),
+                          _UrgencyPill(urgency: job.urgency),
+                          if (job.inspection)
+                            const InspectionBadge(small: true),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 8),
-                    // My Jobs → Applied shows THIS worker's own bid outcome,
-                    // not the booking's status: a job awarded to someone else
-                    // leaves the booking ACCEPTED while this worker's bid is
-                    // REJECTED, and showing "Assigned" there would read as
-                    // though they had won it.
-                    if (job.myBidStatus != null)
-                      _BidStatusChip(outcome: job.myBidStatus!)
-                    else
-                      _StatusChip(status: job.status),
+                    const SizedBox(width: 10),
+                    // Price this Ustaad's work unit was hired/paid for — see
+                    // BookingEntity.canonicalPrice. Under the Applied filter
+                    // the job usually isn't assigned to this worker at all
+                    // (canonicalPrice is null for a still-open BIDDING job),
+                    // so their OWN bid amount is the only truthful figure to
+                    // show there.
+                    if ((job.myBidAmount ?? job.canonicalPrice) != null)
+                      Text(
+                        formatPkr(job.myBidAmount ?? job.canonicalPrice),
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w700,
+                          color: c.textPrimary,
+                          height: 1.1,
+                        ),
+                      ),
                   ],
                 ),
 
-                // ── Title ────────────────────────────────────────────────
-                if (job.title != null && job.title!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
+                // ── What the job actually is ─────────────────────────────
+                //
+                // `title` is the job an Ustaad was hired for ("Distribution
+                // Box Setup"); `serviceCategory` is the trade ("Electrician").
+                // The card used to headline the trade and whisper the job in
+                // 13px grey underneath, so three cards for three different
+                // jobs all read "Electrician". The headline is the job now,
+                // and the trade joins the client on the supporting line —
+                // both fields still render, only their weight swapped.
+                const SizedBox(height: 10),
+                Text(
+                  hasTitle ? job.title! : job.serviceCategory,
+                  style: TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: c.textPrimary,
+                    height: 1.25,
+                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+                if (hasTitle || hasClient) ...[
+                  const SizedBox(height: 3),
                   Text(
-                    job.title!,
-                    style: TextStyle(
-                      fontSize: 13,
-                      color: c.textSecondary,
-                      height: 1.4,
-                    ),
-                    maxLines: 2,
+                    [
+                      if (hasTitle) job.serviceCategory,
+                      if (hasClient) job.clientName!,
+                    ].join(' · '),
+                    style: TextStyle(fontSize: 13, color: c.textSecondary),
+                    maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),
                 ],
@@ -413,59 +411,38 @@ class _JobCard extends ConsumerWidget {
                 Divider(height: 1, color: c.divider),
                 const SizedBox(height: 10),
 
-                // ── Meta row ─────────────────────────────────────────────
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 6,
-                  crossAxisAlignment: WrapCrossAlignment.center,
+                // ── Quiet meta: when, where, which booking ───────────────
+                Row(
                   children: [
-                    // Urgency badge
-                    _UrgencyPill(urgency: job.urgency),
-                    if (job.inspection) const InspectionBadge(small: true),
-                    // Price this Ustaad's work unit was hired/paid for — see
-                    // BookingEntity.canonicalPrice. Under the Applied filter
-                    // the job usually isn't assigned to this worker at all
-                    // (canonicalPrice is null for a still-open BIDDING job),
-                    // so their OWN bid amount is the only truthful figure to
-                    // show there.
-                    if ((job.myBidAmount ?? job.canonicalPrice) != null)
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(
-                            Icons.payments_outlined,
-                            size: 12,
-                            color: c.textSecondary,
-                          ),
-                          const SizedBox(width: 3),
-                          Text(
-                            formatPkr(job.myBidAmount ?? job.canonicalPrice),
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: c.textPrimary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    // Date
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.access_time_rounded,
-                          size: 12,
+                    Icon(
+                      Icons.access_time_rounded,
+                      size: 14,
+                      color: c.textSecondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Expanded(
+                      child: Text(
+                        _fmtDate(context, job.acceptedAt ?? job.createdAt),
+                        style: TextStyle(
+                          fontSize: 12.5,
                           color: c.textSecondary,
                         ),
-                        const SizedBox(width: 3),
-                        Text(
-                          _fmtDate(context, job.acceptedAt ?? job.createdAt),
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: c.textSecondary,
-                          ),
-                        ),
-                      ],
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Kept, but no longer the second-loudest thing on the
+                    // card — an Ustaad needs it when he calls support, not
+                    // when he is scanning the list.
+                    Text(
+                      job.referenceId,
+                      style: TextStyle(
+                        fontSize: 12.5,
+                        color: c.textSecondary,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),
@@ -477,15 +454,15 @@ class _JobCard extends ConsumerWidget {
                     children: [
                       Icon(
                         Icons.location_on_outlined,
-                        size: 12,
+                        size: 14,
                         color: c.textSecondary,
                       ),
-                      const SizedBox(width: 3),
+                      const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           '${job.city.isNotEmpty ? '${job.city}, ' : ''}${job.address!}',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: 12.5,
                             color: c.textSecondary,
                           ),
                           maxLines: 1,
@@ -564,7 +541,7 @@ class _InspectionOnlyCompletedBadge extends StatelessWidget {
             child: Text(
               context.l10n.workerOnlyInspectionCompleted,
               style: TextStyle(
-                fontSize: 11.5,
+                fontSize: 12.5,
                 fontWeight: FontWeight.w700,
                 color: c.warning,
               ),
@@ -945,7 +922,7 @@ class _StatusChip extends StatelessWidget {
       child: Text(
         workerJobStatusLabel(context.l10n, status),
         style: TextStyle(
-          fontSize: 11,
+          fontSize: 12.5,
           fontWeight: FontWeight.w600,
           color: fg,
         ),
@@ -999,7 +976,7 @@ class _BidStatusChip extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: 11,
+          fontSize: 12.5,
           fontWeight: FontWeight.w600,
           color: fg,
         ),
@@ -1034,7 +1011,7 @@ class _UrgencyPill extends StatelessWidget {
           Text(
             isUrgent ? context.l10n.postJobUrgent : context.l10n.postJobNormal,
             style: TextStyle(
-              fontSize: 10,
+              fontSize: 12.5,
               fontWeight: FontWeight.w600,
               color: isUrgent ? c.urgent : c.textSecondary,
             ),

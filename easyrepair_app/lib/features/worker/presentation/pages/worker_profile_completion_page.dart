@@ -264,9 +264,9 @@ class _WorkerProfileCompletionPageState
     Future<String?> Function(File file) uploader,
     void Function(bool) setUploading,
     String fieldKey, {
-    final c = context.semanticColors;
     ImageSource? forceSource,
   }) async {
+    final c = context.semanticColors;
     // The profile photo doubles as the identity-verification image, so it is
     // taken with the camera rather than picked from the gallery.
     final source = forceSource ?? await _chooseImageSource();

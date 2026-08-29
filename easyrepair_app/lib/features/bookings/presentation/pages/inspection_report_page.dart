@@ -344,6 +344,7 @@ class _ReportBody extends ConsumerWidget {
   }
 
   Future<void> _decide(BuildContext context, WidgetRef ref, {required bool accept}) async {
+    final c = context.semanticColors;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -408,6 +409,7 @@ class _ReportBody extends ConsumerWidget {
   }
 
   Future<void> _findOtherUstaad(BuildContext context, WidgetRef ref) async {
+    final c = context.semanticColors;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
